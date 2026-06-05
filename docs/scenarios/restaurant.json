@@ -1,0 +1,53 @@
+{
+  "id": "restaurant",
+  "name": "Restaurant Ordering",
+  "role": "Waitress",
+  "level": "A2-B1",
+  "opening": "Welcome! What would you like to order today?",
+  "goals": [
+    "order_food_or_drink",
+    "use_polite_expression",
+    "answer_follow_up_question"
+  ],
+  "keywords": ["coffee", "tea", "sandwich", "takeaway", "please"],
+  "recommendedExpressions": [
+    "I'd like to order a coffee, please.",
+    "Could I have a sandwich?",
+    "For here, please.",
+    "How much is it?"
+  ],
+  "turns": [
+    {
+      "id": "turn-1",
+      "expectedIntent": "order_food_or_drink",
+      "requiredSlots": ["item"],
+      "reply": "Sure. Would you like anything to drink?",
+      "correctionHints": [
+        {
+          "pattern": "I want order",
+          "suggestion": "I'd like to order"
+        }
+      ]
+    },
+    {
+      "id": "turn-2",
+      "expectedIntent": "answer_follow_up_question",
+      "requiredSlots": ["drink_or_no_drink"],
+      "reply": "Great. Is that for here or takeaway?",
+      "correctionHints": []
+    },
+    {
+      "id": "turn-3",
+      "expectedIntent": "confirm_option",
+      "requiredSlots": ["for_here_or_takeaway"],
+      "reply": "No problem. Your order will be ready soon.",
+      "correctionHints": []
+    }
+  ],
+  "fallbackReplies": [
+    "Could you say that again, please?",
+    "Please tell me what you would like to order.",
+    "Would you like that for here or takeaway?"
+  ]
+}
+

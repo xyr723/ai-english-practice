@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+captures/
+*.apk
+*.aab
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+dist/
+*.egg-info/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Generated assets
+generated/
+cache/
+tmp/
+
