@@ -45,11 +45,13 @@ android/build/outputs/apk/debug/android-debug.apk
 4. 点击场景卡片进入详情页，查看角色、等级、目标、关键词和对话节奏。
 5. 点击 `Start Practice` 进入对应场景的横屏练习页。
 6. 练习页展示 `Ready`、`Listening`、`Recognized transcript`、`Coach is checking`、`Feedback ready`、`Session complete` 和错误恢复状态。
-7. 按状态点击 `Start Listening`、`Recognize Demo`、`Ask Coach`、`Show Feedback`，模拟完成一轮英文输入和反馈。
-8. 页面展示推荐表达、纠错提示、AI 回复和四维评分。
-9. 点击 `Finish` 展示课后总结，并把本次总结写入本地 History。
-10. 点击 `History` 查看本地练习记录、最近分数、下一步目标，并可重复练习同一场景或清空记录。
-11. 回到首页后，今日完成 turn 数和最近一次总结会从本地历史更新。
+7. 点击 `Start Speech` 请求麦克风权限并启动 Android SpeechRecognizer；识别结果进入 transcript 区域。
+8. 没有权限或设备不支持识别时，页面保留 demo fallback，可继续用 `Recognize Demo` 完成演示链路。
+9. 点击 `Ask Coach`、`Show Feedback` 后，页面展示推荐表达、纠错提示、AI 回复和四维评分。
+10. TTS 默认开启，`Speak Coach` 可朗读教练开场或回复，也可以通过 `Disable TTS` 关闭。
+11. 点击 `Finish` 展示课后总结，并把本次总结写入本地 History。
+12. 点击 `History` 查看本地练习记录、最近分数、下一步目标，并可重复练习同一场景或清空记录。
+13. 回到首页后，今日完成 turn 数和最近一次总结会从本地历史更新。
 
 这条链路复用 `PracticeSession`、`RuleCorrectionEngine` 和 `ScoreEngine`，后续 SpeechRecognizer/TTS 接入时不需要重写评分与总结逻辑。
 
@@ -64,8 +66,11 @@ android/build/outputs/apk/debug/android-debug.apk
 - `ui.theme.PracticeTheme`：颜色和 Material 主题。
 - `core.ScenarioCatalog`：本地场景目录，提供推荐场景、列表和按 id 查询。
 - `core.PracticeUiState`：练习页状态模型，统一维护状态文案、主操作、时间线、结束和错误恢复标记。
+- `core.VoiceUiState`：语音输入/TTS 状态模型，维护 speech/demo 模式、权限、识别文本、错误和 TTS 开关。
 - `core.PracticeHistoryStore`：进程内本地历史仓库，负责记录完成摘要、最近记录、累计 turn 和清空记录。
 - `core.AppNavigator`：轻量路由状态，当前覆盖 Home、Scenarios、ScenarioDetail、Practice、History、Settings。
+- `voice.SpeechRecognizerAdapter`：Android SpeechRecognizer 封装，提供 ready、partial、final 和 error 回调。
+- `voice.TextToSpeechAdapter`：Android TextToSpeech 封装，负责教练文本朗读和生命周期释放。
 
 ## 实现顺序
 
