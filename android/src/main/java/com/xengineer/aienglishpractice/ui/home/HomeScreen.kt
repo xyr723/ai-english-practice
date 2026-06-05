@@ -90,6 +90,12 @@ fun HomeScreen(
                             text = "Streak ${dashboard.practiceStats.streakDays} day · ${dashboard.practiceStats.completedTurns} turns completed",
                             color = Color(0xFFEAD7C4)
                         )
+                        dashboard.recentHistory?.let { recent ->
+                            Text(
+                                text = "Last: ${recent.scenarioName} · ${recent.averageScore} avg · ${recent.turnCount} turns",
+                                color = Color(0xFFEAD7C4)
+                            )
+                        }
                         Spacer(Modifier.height(8.dp))
                         PrimaryAction(
                             text = "Start ${dashboard.primaryScenario.name}",

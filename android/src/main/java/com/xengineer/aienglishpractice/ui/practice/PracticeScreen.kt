@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.xengineer.aienglishpractice.core.PracticeState
 import com.xengineer.aienglishpractice.core.PracticeStep
 import com.xengineer.aienglishpractice.core.PracticeUiState
+import com.xengineer.aienglishpractice.core.PracticeHistoryEntry
 import com.xengineer.aienglishpractice.core.PracticeSession
 import com.xengineer.aienglishpractice.core.PracticeScenario
 import com.xengineer.aienglishpractice.core.RuleCorrectionEngine
@@ -39,7 +40,8 @@ import com.xengineer.aienglishpractice.ui.theme.PracticeColors
 @Composable
 fun PracticeScreen(
     scenarioId: String,
-    onBackHome: () -> Unit
+    onBackHome: () -> Unit,
+    onSessionFinished: (PracticeHistoryEntry) -> Unit = {}
 ) {
     val scenario = remember(scenarioId) {
         ScenarioCatalog.findById(scenarioId) ?: ScenarioCatalog.recommended()
@@ -123,6 +125,11 @@ fun PracticeScreen(
                 onPrimaryAction = { advancePrimary() },
                 onFinish = {
                     val summary = session.finish()
+                    val entry = PracticeHistoryEntry.fromSummary(
+                        scenario = scenario,
+                        summary = summary
+                    )
+                    onSessionFinished(entry)
                     uiState = PracticeUiState.finished(
                         scenario = scenario,
                         summary = summary
