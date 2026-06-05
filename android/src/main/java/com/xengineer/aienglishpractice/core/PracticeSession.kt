@@ -10,6 +10,9 @@ class PracticeSession(
 
     private val turns = mutableListOf<TurnResult>()
 
+    val turnCount: Int
+        get() = turns.size
+
     fun start() {
         state = PracticeState.Idle
     }
@@ -39,6 +42,12 @@ class PracticeSession(
             tips = correction.issues.map { it.message }
         )
 
+        turns += result
+        state = PracticeState.Speaking
+        return result
+    }
+
+    fun recordAnalyzedTurn(result: TurnResult): TurnResult {
         turns += result
         state = PracticeState.Speaking
         return result
