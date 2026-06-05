@@ -22,7 +22,7 @@
 - 建立 Android 与 backend 目录。
 - 确认技术栈和最小可运行工程。
 - 添加基础场景脚本。
-- 建立文档和协作规范。
+- 建立需求、设计、计划和 UML 文档。
 
 ### 阶段 2：Android 主链路
 
@@ -63,3 +63,16 @@
 - 评分和纠错结果可解释。
 - 课后总结能完整展示。
 - README 和文档能说明项目目标、架构和运行方式。
+
+## 实现顺序
+
+1. 后端核心纯规则模块：场景加载、纠错、评分、总结。
+2. 后端 FastAPI 接口：`/health`、`/scenarios`、`/grammar/check`、`/coach/analyze`、`/summary`。
+3. Android 数据模型和场景选择页。
+4. Android 横屏练习页静态 UI。
+5. Android 语音主链路：SpeechRecognizer、TurnBuffer、TextToSpeech。
+6. Android 纠错/评分展示和课后总结页。
+7. 后端增强：LanguageTool、LLM 总结、图像缓存。
+8. 演示检查：真机录屏、异常 fallback、README 视频链接。
+
+这个顺序先保证可测试的核心逻辑，再接 UI 和语音能力，避免在 UI 未稳定时混入复杂模型依赖。
