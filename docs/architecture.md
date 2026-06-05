@@ -31,6 +31,18 @@ flowchart LR
 - `PracticeViewModel`：协调识别、纠错、评分、回复和 UI 状态。
 - `DemoFallbackRepository`：提供离线可演示数据。
 
+客户端遵循单向数据流：UI 只发送用户意图，`PracticeViewModel` 维护状态并调用领域模块，最终输出可渲染的 `PracticeUiState`。
+
+```mermaid
+flowchart LR
+    Intent[用户意图] --> VM[PracticeViewModel]
+    VM --> Domain[领域模块]
+    Domain --> Result[TurnResult]
+    Result --> VM
+    VM --> State[PracticeUiState]
+    State --> UI[Compose UI]
+```
+
 ## FastAPI 后端
 
 后端作为增强服务，不阻塞主链路：
@@ -40,6 +52,14 @@ flowchart LR
 - `/image/generate`：生成或返回缓存场景图。
 - `/asr/paddle`：备用语音识别接口。
 - `/summary`：根据练习记录生成总结。
+
+后端分为 API 层、服务层和数据层：
+
+- API 层负责请求校验和响应格式。
+- 服务层负责纠错、评分、总结和场景推进。
+- 数据层读取场景脚本和 fallback 数据。
+
+第一版后端先实现可测试的纯规则能力，再逐步接入外部服务。
 
 ## 数据流
 
@@ -71,6 +91,28 @@ sequenceDiagram
 - 后端请求设置超时，失败后返回本地 fallback。
 - 场景图、脚本和角色资源本地缓存。
 - 评分公式可解释，避免依赖不可控模型输出。
+- 外部服务异常不向用户暴露堆栈，只显示可操作提示。
+- 后端响应包含 `source` 字段，标记结果来自规则、LanguageTool、LLM 或 fallback。
+
+## 模块边界
+
+| 模块 | 输入 | 输出 | 失败策略 |
+| --- | --- | --- | --- |
+| ScenarioEngine | 场景脚本、用户文本、当前轮次 | AI 回复、目标命中情况 | 使用 fallback 回复 |
+| TurnBuffer | partial/final 文本、时间戳、置信度 | 完整 Turn | 提示重试或继续录音 |
+| CorrectionEngine | 用户文本、场景上下文 | 纠错项、推荐表达 | 返回空纠错项 |
+| ScoreEngine | Turn、纠错项、目标命中 | 四维评分和原因 | 返回保守默认分 |
+| SummaryEngine | 全部 TurnResult | 总结、推荐表达、下次目标 | 使用模板总结 |
+
+## 数据存储
+
+第一版优先使用本地 JSON 和内存状态：
+
+- 场景脚本：JSON 文件。
+- 练习过程：Android 端内存状态，结束后可写入本地历史。
+- 后端：无数据库依赖，便于部署和演示。
+
+如果后续需要历史趋势和跨设备同步，再引入 SQLite 或远端数据库。
 
 ## 部署方案
 
@@ -96,4 +138,3 @@ flowchart LR
 ```
 
 正式部署中，后端服务、缓存和模型服务可按模块扩展。
-
