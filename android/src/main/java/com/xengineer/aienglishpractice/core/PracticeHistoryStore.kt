@@ -23,7 +23,7 @@ data class PracticeHistoryEntry(
         fun fromSummary(
             scenario: PracticeScenario,
             summary: PracticeSummary,
-            completedAtLabel: String = "Just now",
+            completedAtLabel: String = "刚刚",
             id: String = "${scenario.id}-${System.currentTimeMillis()}"
         ): PracticeHistoryEntry = PracticeHistoryEntry(
             id = id,

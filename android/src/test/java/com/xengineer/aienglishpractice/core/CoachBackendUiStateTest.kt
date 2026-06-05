@@ -17,7 +17,7 @@ class CoachBackendUiStateTest {
 
         assertTrue(failed.shouldUseLocalFallback)
         assertEquals(CoachFeedbackSource.LocalFallback, failed.lastSource)
-        assertTrue(failed.statusText.contains("fallback", ignoreCase = true))
+        assertTrue(failed.statusText.contains("本地分析"))
     }
 
     @Test
@@ -27,7 +27,7 @@ class CoachBackendUiStateTest {
         assertEquals(CoachBackendMode.LocalOnly, state.mode)
         assertFalse(state.shouldTryBackend)
         assertTrue(state.shouldUseLocalFallback)
-        assertEquals("Use Backend", state.modeAction)
+        assertEquals("自动模式", state.modeAction)
     }
 
     @Test

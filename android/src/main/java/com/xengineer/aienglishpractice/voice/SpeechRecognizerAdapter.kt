@@ -18,7 +18,7 @@ class SpeechRecognizerAdapter(
 
     fun startListening(callbacks: SpeechRecognitionCallbacks) {
         if (!isAvailable()) {
-            callbacks.onError("Speech recognition is unavailable on this device.")
+            callbacks.onError("当前设备不可用语音识别。")
             return
         }
 
@@ -90,14 +90,14 @@ private fun Bundle?.bestRecognitionText(): String {
 }
 
 private fun Int.toSpeechErrorMessage(): String = when (this) {
-    SpeechRecognizer.ERROR_AUDIO -> "Audio recording failed."
-    SpeechRecognizer.ERROR_CLIENT -> "Speech recognition client error."
-    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is unavailable."
-    SpeechRecognizer.ERROR_NETWORK -> "Network error while recognizing speech."
-    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Speech recognition network timeout."
-    SpeechRecognizer.ERROR_NO_MATCH -> "No speech was recognized."
-    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech recognizer is busy."
-    SpeechRecognizer.ERROR_SERVER -> "Speech recognition server error."
-    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected."
-    else -> "Speech recognition failed."
+    SpeechRecognizer.ERROR_AUDIO -> "录音失败。"
+    SpeechRecognizer.ERROR_CLIENT -> "语音识别客户端异常。"
+    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "麦克风权限不可用。"
+    SpeechRecognizer.ERROR_NETWORK -> "语音识别网络异常。"
+    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "语音识别网络超时。"
+    SpeechRecognizer.ERROR_NO_MATCH -> "未识别到有效语音。"
+    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "语音识别器正忙。"
+    SpeechRecognizer.ERROR_SERVER -> "语音识别服务异常。"
+    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "未检测到语音。"
+    else -> "语音识别失败。"
 }

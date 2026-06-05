@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -177,7 +178,7 @@ fun PracticeScreen(
                 }
             } catch (error: Exception) {
                 val failedState = activeBackendState.withBackendFailure(
-                    error.message ?: "Backend request failed"
+                    error.message ?: "云端请求失败"
                 )
                 backendState = failedState
                 if (failedState.shouldUseLocalFallback) {
@@ -222,7 +223,7 @@ fun PracticeScreen(
 
     fun startSpeechInput() {
         if (!speechRecognizer.isAvailable()) {
-            voiceState = voiceState.withRecognitionError("Speech recognition is unavailable on this device.")
+            voiceState = voiceState.withRecognitionError("当前设备不可用语音识别。")
             return
         }
         if (!hasAudioPermission) {
@@ -230,7 +231,7 @@ fun PracticeScreen(
             return
         }
 
-        voiceState = voiceState.useSpeechMode().startListening()
+        voiceState = voiceState.startSpeechFromCurrentMode()
         uiState = PracticeUiState.listening(scenario)
         speechRecognizer.startListening(
             SpeechRecognitionCallbacks(
@@ -261,7 +262,7 @@ fun PracticeScreen(
                     voiceState = voiceState.withRecognitionError(message)
                     uiState = PracticeUiState.error(
                         scenario = scenario,
-                        message = "$message Demo fallback is still available."
+                        message = "$message 可继续使用演示模式。"
                     )
                 }
             )
@@ -286,10 +287,6 @@ fun PracticeScreen(
         textToSpeech.speak(replyText(scenario.opening, uiState))
     }
 
-    fun toggleBackendMode() {
-        backendState = backendState.nextMode()
-    }
-
     StageScaffold {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -297,14 +294,14 @@ fun PracticeScreen(
         ) {
             PracticeHeader(
                 title = scenario.name,
-                subtitle = "${scenario.level} · ${scenario.estimatedMinutes} min · ${scenario.sceneTone}",
+                subtitle = "${scenario.level} · ${scenario.estimatedMinutes} 分钟 · ${scenario.sceneTone}",
                 onBackHome = onBackHome
             )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(18.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatusPanel(
                     uiState = uiState,
@@ -329,7 +326,6 @@ fun PracticeScreen(
                 onStartSpeech = { startSpeechInput() },
                 onToggleVoiceMode = { toggleVoiceMode() },
                 onToggleTts = { voiceState = voiceState.setTtsEnabled(!voiceState.ttsEnabled) },
-                onToggleBackend = { toggleBackendMode() },
                 onFinish = {
                     val summary = session.finish()
                     val entry = PracticeHistoryEntry.fromSummary(
@@ -340,12 +336,6 @@ fun PracticeScreen(
                     uiState = PracticeUiState.finished(
                         scenario = scenario,
                         summary = summary
-                    )
-                },
-                onSimulateError = {
-                    uiState = PracticeUiState.error(
-                        scenario = scenario,
-                        message = "Microphone permission is unavailable. Recover and continue with demo mode."
                     )
                 }
             )
@@ -374,7 +364,7 @@ private fun PracticeHeader(
             Text(text = subtitle, color = Color(0xFFD9E7EA))
         }
         TextButton(onClick = onBackHome) {
-            Text("Home", color = Color.White)
+            Text("首页", color = Color.White)
         }
     }
 }
@@ -386,22 +376,35 @@ private fun StatusPanel(
     backendState: CoachBackendUiState,
     modifier: Modifier = Modifier
 ) {
-    DarkPanel(modifier = modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Live state", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+    DarkPanel(modifier = modifier.fillMaxWidth().fillMaxHeight()) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("实时状态", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
             Text(
                 text = uiState.statusTitle,
                 color = Color.White,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            Text(uiState.statusBody, color = Color(0xFFEAD7C4))
-            Text("Voice: ${voiceState.statusText}", color = Color(0xFFEAD7C4))
             Text(
-                "TTS: ${if (voiceState.ttsReady) "ready" else "initializing"} · ${if (voiceState.ttsEnabled) "enabled" else "muted"}",
-                color = Color(0xFFEAD7C4)
+                text = uiState.statusBody,
+                color = Color(0xFFEAD7C4),
+                style = MaterialTheme.typography.bodyMedium
             )
-            Text("Coach: ${backendState.statusText}", color = Color(0xFFEAD7C4))
+            Text(
+                text = "语音：${voiceState.statusText}",
+                color = Color(0xFFEAD7C4),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                "朗读：${if (voiceState.ttsReady) "就绪" else "初始化"} · ${if (voiceState.ttsEnabled) "开启" else "静音"}",
+                color = Color(0xFFEAD7C4),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "教练：${backendState.statusText}",
+                color = Color(0xFFEAD7C4),
+                style = MaterialTheme.typography.bodyMedium
+            )
             Spacer(Modifier.height(4.dp))
             uiState.timeline.forEach { step ->
                 TimelineRow(step)
@@ -414,7 +417,7 @@ private fun StatusPanel(
 private fun TimelineRow(step: PracticeStep) {
     val marker = when {
         step.isActive -> ">"
-        step.isComplete -> "done"
+        step.isComplete -> "✓"
         else -> "-"
     }
     val markerColor = when {
@@ -441,22 +444,22 @@ private fun TimelineRow(step: PracticeStep) {
 private fun FeedbackPanel(uiState: PracticeUiState, modifier: Modifier = Modifier) {
     val turnResult = uiState.turnResult
     val transcript = when {
-        uiState.phase == PracticeState.Listening -> "Listening for your answer..."
+        uiState.phase == PracticeState.Listening -> "正在等待你的回答..."
         uiState.transcript.isNotBlank() -> uiState.transcript
-        else -> "Transcript appears after recognition."
+        else -> "识别后会显示转写文本。"
     }
 
-    DarkPanel(modifier = modifier.fillMaxWidth()) {
+    DarkPanel(modifier = modifier.fillMaxWidth().fillMaxHeight()) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("You said", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+            Text("你说了", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
             Text(transcript, color = Color.White)
-            Text("Better expression", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+            Text("更自然的表达", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
             Text(
-                turnResult?.betterExpression ?: "Correction appears after the coach check.",
+                turnResult?.betterExpression ?: "教练分析后会显示优化表达。",
                 color = Color.White
             )
-            Text("Tips", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
-            Text(turnResult?.tips?.joinToString("\n") ?: "No tips yet.", color = Color.White)
+            Text("提示", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+            Text(turnResult?.tips?.joinToString("\n") ?: "暂无提示。", color = Color.White)
         }
     }
 }
@@ -472,26 +475,26 @@ private fun CoachPanel(
     val turnResult = uiState.turnResult
     val summary = uiState.summary
 
-    LightPanel(modifier = modifier.fillMaxWidth()) {
+    LightPanel(modifier = modifier.fillMaxWidth().fillMaxHeight()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Coach reply", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
+            Text("教练回复", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
             Text(replyText(opening, uiState))
             Text(
-                text = "Source: ${turnResult?.source?.label() ?: "Waiting"}",
+                text = "来源：${turnResult?.source?.label() ?: "待生成"}",
                 color = PracticeColors.Ink
             )
-            ScoreRow("Grammar", turnResult?.scores?.grammar?.score)
-            ScoreRow("Fluency", turnResult?.scores?.fluency?.score)
-            ScoreRow("Pronunciation", turnResult?.scores?.pronunciation?.score)
-            ScoreRow("Completion", turnResult?.scores?.completion?.score)
+            ScoreRow("语法", turnResult?.scores?.grammar?.score)
+            ScoreRow("流利度", turnResult?.scores?.fluency?.score)
+            ScoreRow("发音", turnResult?.scores?.pronunciation?.score)
+            ScoreRow("完成度", turnResult?.scores?.completion?.score)
             if (summary != null) {
-                Text("Summary", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
-                Text("Turns: ${summary.turnCount}  Average: ${summary.averageScore}")
+                Text("课后总结", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
+                Text("轮次：${summary.turnCount}  平均分：${summary.averageScore}")
                 Text(summary.nextGoal)
             }
             if (voiceState.ttsEnabled) {
                 PrimaryAction(
-                    text = if (voiceState.ttsReady) "Speak Coach" else "TTS Loading",
+                    text = if (voiceState.ttsReady) "朗读回复" else "朗读加载中",
                     onClick = onSpeakCoach
                 )
             }
@@ -502,7 +505,7 @@ private fun CoachPanel(
 @Composable
 private fun ScoreRow(label: String, score: Int?) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, modifier = Modifier.width(128.dp), color = PracticeColors.Ink)
+        Text(label, modifier = Modifier.width(76.dp), color = PracticeColors.Ink)
         Text((score ?: "--").toString(), fontWeight = FontWeight.Bold, color = PracticeColors.Ink)
     }
 }
@@ -516,9 +519,7 @@ private fun PracticeControls(
     onStartSpeech: () -> Unit,
     onToggleVoiceMode: () -> Unit,
     onToggleTts: () -> Unit,
-    onToggleBackend: () -> Unit,
-    onFinish: () -> Unit,
-    onSimulateError: () -> Unit
+    onFinish: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -527,19 +528,19 @@ private fun PracticeControls(
             verticalAlignment = Alignment.CenterVertically
         ) {
             PrimaryAction(
-                text = if (backendState.isChecking) "Checking..." else uiState.primaryAction,
+                text = if (backendState.isChecking) "分析中..." else uiState.primaryAction,
                 onClick = onPrimaryAction,
-                modifier = Modifier.widthIn(min = 156.dp)
+                modifier = Modifier.widthIn(min = 116.dp)
             )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(8.dp))
             PrimaryAction(
-                text = if (voiceState.isListening) "Listening..." else voiceState.speechAction,
+                text = if (voiceState.isListening) "聆听中..." else voiceState.speechAction,
                 onClick = onStartSpeech,
-                modifier = Modifier.widthIn(min = 144.dp)
+                modifier = Modifier.widthIn(min = 112.dp)
             )
             if (uiState.canFinish) {
-                Spacer(Modifier.width(12.dp))
-                PrimaryAction(text = "Finish", onClick = onFinish)
+                Spacer(Modifier.width(8.dp))
+                PrimaryAction(text = "完成", onClick = onFinish)
             }
         }
         Row(
@@ -552,14 +553,6 @@ private fun PracticeControls(
             }
             TextButton(onClick = onToggleTts) {
                 Text(voiceState.ttsAction, color = Color.White)
-            }
-            TextButton(onClick = onToggleBackend) {
-                Text(backendState.modeAction, color = Color.White)
-            }
-            if (uiState.phase != PracticeState.Finished) {
-                TextButton(onClick = onSimulateError) {
-                    Text("Simulate Error", color = Color.White)
-                }
             }
         }
     }
@@ -576,10 +569,10 @@ private fun replyText(opening: String, uiState: PracticeUiState): String = when 
     PracticeState.Listening,
     PracticeState.Recognizing -> opening
 
-    PracticeState.Thinking -> "Give me a moment. I am checking your answer."
+    PracticeState.Thinking -> "请稍等，教练正在分析你的回答。"
     PracticeState.Speaking -> uiState.turnResult?.reply ?: opening
-    PracticeState.Finished -> "Good work. Review the summary before restarting."
-    PracticeState.Error -> "Recover the session, then continue with the same scene."
+    PracticeState.Finished -> "本次练习已完成，请查看总结。"
+    PracticeState.Error -> "恢复练习后，可继续当前场景。"
 }
 
 private fun demoTranscriptFor(scenarioId: String): String = when (scenarioId) {
@@ -604,7 +597,7 @@ private fun android.content.Context.hasRecordAudioPermission(): Boolean =
     checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
 private fun CoachFeedbackSource.label(): String = when (this) {
-    CoachFeedbackSource.BackendApi -> "Backend API"
-    CoachFeedbackSource.LocalFallback -> "Local fallback"
-    CoachFeedbackSource.BackendError -> "Backend error"
+    CoachFeedbackSource.BackendApi -> "云端教练"
+    CoachFeedbackSource.LocalFallback -> "本地分析"
+    CoachFeedbackSource.BackendError -> "云端错误"
 }

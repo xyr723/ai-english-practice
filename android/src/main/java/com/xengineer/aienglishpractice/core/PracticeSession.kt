@@ -68,9 +68,9 @@ class PracticeSession(
         return PracticeSummary(
             turnCount = turns.size,
             averageScore = averageScore,
-            strengths = if (turns.isEmpty()) emptyList() else listOf("You completed the practice flow."),
-            improvements = listOf("Review corrected expressions and repeat the scene."),
-            nextGoal = "Practice confirming price and takeaway options."
+            strengths = if (turns.isEmpty()) emptyList() else listOf("你完成了本次场景练习。"),
+            improvements = listOf("复习优化表达，并重复练习同一场景。"),
+            nextGoal = "下次重点练习确认价格和外带选项。"
         )
     }
 

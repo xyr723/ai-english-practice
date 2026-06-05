@@ -15,7 +15,7 @@ class ScoreEngine {
         return ScoreBundle(
             grammar = ScoreDetail(
                 score = clamp(100 - issueCount * 8),
-                reason = "Found $issueCount grammar or expression issues."
+                reason = "发现 $issueCount 处语法或表达问题。"
             ),
             fluency = ScoreDetail(
                 score = scoreFluency(wordCount, durationMs),
@@ -24,14 +24,14 @@ class ScoreEngine {
             pronunciation = ScoreDetail(
                 score = clamp(((asrConfidence ?: 0f) * 100).toInt()),
                 reason = if (asrConfidence == null) {
-                    "ASR confidence is unavailable."
+                    "暂无语音识别置信度。"
                 } else {
-                    "ASR confidence is %.2f.".format(asrConfidence)
+                    "语音识别置信度为 %.2f。".format(asrConfidence)
                 }
             ),
             completion = ScoreDetail(
                 score = if (totalGoals <= 0) 0 else clamp((matchedGoals * 100f / totalGoals).toInt()),
-                reason = "Matched $matchedGoals of $totalGoals scene goals."
+                reason = "已命中 $matchedGoals / $totalGoals 个场景目标。"
             )
         )
     }
@@ -47,9 +47,9 @@ class ScoreEngine {
     }
 
     private fun fluencyReason(wordCount: Int, durationMs: Int): String {
-        if (wordCount <= 0 || durationMs <= 0) return "No usable speaking duration was provided."
+        if (wordCount <= 0 || durationMs <= 0) return "暂无有效的语音时长。"
         val wpm = wordCount / (durationMs / 60000f)
-        return "Speaking speed is %.0f words per minute.".format(wpm)
+        return "语速约为每分钟 %.0f 个单词。".format(wpm)
     }
 
     private fun clamp(value: Int): Int = value.coerceIn(0, 100)

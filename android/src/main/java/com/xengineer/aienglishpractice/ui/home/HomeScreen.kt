@@ -45,23 +45,23 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "Lingua Café",
+                        text = "AI 英语口语陪练",
                         color = Color.White,
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Scenario speaking practice",
+                        text = "场景化开口练习",
                         color = Color(0xFFDCEDEA),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
                 Row {
                     TextButton(onClick = onOpenHistory) {
-                        Text("History", color = Color.White)
+                        Text("记录", color = Color.White)
                     }
                     TextButton(onClick = onOpenSettings) {
-                        Text("Settings", color = Color.White)
+                        Text("设置", color = Color.White)
                     }
                 }
             }
@@ -76,29 +76,29 @@ fun HomeScreen(
                 DarkPanel(modifier = Modifier.weight(1.1f)) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text(
-                            text = "Today",
+                            text = "今日目标",
                             color = PracticeColors.Amber,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${dashboard.practiceStats.todayGoalMinutes} min speaking goal",
+                            text = "${dashboard.practiceStats.todayGoalMinutes} 分钟口语练习",
                             color = Color.White,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Streak ${dashboard.practiceStats.streakDays} day · ${dashboard.practiceStats.completedTurns} turns completed",
+                            text = "连续 ${dashboard.practiceStats.streakDays} 天 · 已完成 ${dashboard.practiceStats.completedTurns} 轮",
                             color = Color(0xFFEAD7C4)
                         )
                         dashboard.recentHistory?.let { recent ->
                             Text(
-                                text = "Last: ${recent.scenarioName} · ${recent.averageScore} avg · ${recent.turnCount} turns",
+                                text = "上次：${recent.scenarioName} · 平均 ${recent.averageScore} · ${recent.turnCount} 轮",
                                 color = Color(0xFFEAD7C4)
                             )
                         }
                         Spacer(Modifier.height(8.dp))
                         PrimaryAction(
-                            text = "Start ${dashboard.primaryScenario.name}",
+                            text = "开始${dashboard.primaryScenario.name}",
                             onClick = { onStartPractice(dashboard.primaryScenario.id) }
                         )
                     }
@@ -107,7 +107,7 @@ fun HomeScreen(
                 LightPanel(modifier = Modifier.weight(0.9f)) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text(
-                            text = "Recommended scene",
+                            text = "推荐场景",
                             color = PracticeColors.Ink,
                             fontWeight = FontWeight.Bold
                         )
@@ -122,10 +122,10 @@ fun HomeScreen(
                             color = PracticeColors.Ink
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Metric(label = "Goals", value = dashboard.primaryScenario.goals.size.toString())
-                            Metric(label = "Turns", value = dashboard.primaryScenario.turns.size.toString())
-                            Metric(label = "Level", value = dashboard.primaryScenario.level)
-                            Metric(label = "Time", value = "${dashboard.primaryScenario.estimatedMinutes}m")
+                            Metric(label = "目标", value = dashboard.primaryScenario.goals.size.toString())
+                            Metric(label = "轮次", value = dashboard.primaryScenario.turns.size.toString())
+                            Metric(label = "等级", value = dashboard.primaryScenario.level)
+                            Metric(label = "时长", value = "${dashboard.primaryScenario.estimatedMinutes}分")
                         }
                     }
                 }
@@ -137,14 +137,14 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Practice politely, get scored, review better expressions.",
+                    text = "选择场景，开口练习，查看纠错和评分。",
                     color = Color(0xFFDCEDEA)
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(onClick = onOpenScenarios) {
-                        Text("Scenarios", color = Color.White)
+                        Text("场景", color = Color.White)
                     }
-                    PrimaryAction(text = "Continue", onClick = { onStartPractice(dashboard.primaryScenario.id) })
+                    PrimaryAction(text = "继续", onClick = { onStartPractice(dashboard.primaryScenario.id) })
                 }
             }
         }

@@ -57,7 +57,7 @@ fun HistoryScreen(
                 )
             }
             Text(
-                text = "History is stored locally for the current demo session.",
+                text = "练习记录仅保存在当前演示会话中。",
                 color = Color(0xFFDCEDEA)
             )
         }
@@ -73,19 +73,19 @@ private fun HistoryHeader(onBackHome: () -> Unit) {
     ) {
         Column {
             Text(
-                text = "Practice history",
+                text = "练习记录",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Review summaries and repeat scenes",
+                text = "复盘总结并重复练习",
                 color = Color(0xFFDCEDEA),
                 style = MaterialTheme.typography.titleMedium
             )
         }
         TextButton(onClick = onBackHome) {
-            Text("Home", color = Color.White)
+            Text("首页", color = Color.White)
         }
     }
 }
@@ -98,18 +98,18 @@ private fun EmptyHistory(onStartPractice: () -> Unit, modifier: Modifier = Modif
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "No completed sessions yet",
+                text = "还没有完成的练习",
                 color = PracticeColors.Ink,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "Finish one practice session to see summary, average score, and next goal here.",
+                text = "完成一次练习后，这里会显示总结、平均分和下次目标。",
                 color = PracticeColors.Ink
             )
             Spacer(Modifier.height(18.dp))
-            PrimaryAction(text = "Start Restaurant", onClick = onStartPractice)
+            PrimaryAction(text = "开始点餐", onClick = onStartPractice)
         }
     }
 }
@@ -167,13 +167,13 @@ private fun HistoryEntryRow(
                 )
                 Text(entry.completedAtLabel, color = PracticeColors.Ink)
                 Text(
-                    text = "Average ${entry.averageScore} · ${entry.turnCount} turns",
+                    text = "平均 ${entry.averageScore} · ${entry.turnCount} 轮",
                     color = PracticeColors.Ink,
                     fontWeight = FontWeight.Bold
                 )
                 Text(entry.nextGoal, color = PracticeColors.Ink)
             }
-            PrimaryAction(text = "Repeat", onClick = onPracticeAgain)
+            PrimaryAction(text = "再练一次", onClick = onPracticeAgain)
         }
     }
 }
@@ -190,18 +190,18 @@ private fun HistorySummaryPanel(
 
     DarkPanel(modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("Local summary", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+            Text("本地总结", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
             Text(
-                text = "${entries.size} sessions",
+                text = "${entries.size} 次练习",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
-            Text("Turns completed: $totalTurns", color = Color(0xFFEAD7C4))
-            Text("Average score: $averageScore", color = Color(0xFFEAD7C4))
-            Text("Latest scene: ${latest.scenarioName}", color = Color(0xFFEAD7C4))
+            Text("完成轮次：$totalTurns", color = Color(0xFFEAD7C4))
+            Text("平均分：$averageScore", color = Color(0xFFEAD7C4))
+            Text("最近场景：${latest.scenarioName}", color = Color(0xFFEAD7C4))
             Spacer(Modifier.height(6.dp))
-            PrimaryAction(text = "Clear History", onClick = onClearHistory)
+            PrimaryAction(text = "清空记录", onClick = onClearHistory)
         }
     }
 }

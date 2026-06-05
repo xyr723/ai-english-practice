@@ -76,9 +76,9 @@ fun AppRoot() {
         }
 
         AppRoute.Settings -> PlaceholderScreen(
-            title = "Settings",
-            body = "Voice, backend, and display options will be collected here.",
-            action = "Back home",
+            title = "设置",
+            body = "语音、云端教练和显示选项后续会集中在这里。",
+            action = "返回首页",
             onAction = { navigate { goHome() } }
         )
     }

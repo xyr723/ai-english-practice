@@ -35,7 +35,7 @@ class CoachApiClient(
             }
 
             if (statusCode !in 200..299) {
-                throw IOException("HTTP $statusCode ${responseText.ifBlank { "from backend" }}")
+                throw IOException("HTTP $statusCode ${responseText.ifBlank { "来自云端" }}")
             }
 
             JSONObject(responseText).toTurnResult(request.turnText)

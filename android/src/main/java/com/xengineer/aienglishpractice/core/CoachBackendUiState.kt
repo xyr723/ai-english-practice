@@ -28,20 +28,20 @@ data class CoachBackendUiState(
 
     val modeAction: String
         get() = when (mode) {
-            CoachBackendMode.Auto -> "Backend Only"
-            CoachBackendMode.BackendOnly -> "Use Local"
-            CoachBackendMode.LocalOnly -> "Use Backend"
+            CoachBackendMode.Auto -> "仅云端"
+            CoachBackendMode.BackendOnly -> "本地模式"
+            CoachBackendMode.LocalOnly -> "自动模式"
         }
 
     val statusText: String
         get() = when {
-            isChecking -> "Checking with backend API..."
-            lastSource == CoachFeedbackSource.BackendApi -> "Backend API feedback active."
-            lastSource == CoachFeedbackSource.LocalFallback -> "Backend unavailable; using local fallback."
-            lastSource == CoachFeedbackSource.BackendError -> "Backend error: ${lastError.orEmpty()}"
-            mode == CoachBackendMode.LocalOnly -> "Local fallback only."
-            mode == CoachBackendMode.BackendOnly -> "Backend API only."
-            else -> "Auto backend with local fallback."
+            isChecking -> "正在连接云端。"
+            lastSource == CoachFeedbackSource.BackendApi -> "云端教练已启用。"
+            lastSource == CoachFeedbackSource.LocalFallback -> "云端不可用，已用本地分析。"
+            lastSource == CoachFeedbackSource.BackendError -> "云端错误：${lastError.orEmpty()}"
+            mode == CoachBackendMode.LocalOnly -> "仅使用本地分析。"
+            mode == CoachBackendMode.BackendOnly -> "仅连接云端教练。"
+            else -> "云端优先，本地备用。"
         }
 
     fun useAuto(): CoachBackendUiState = copy(

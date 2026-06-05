@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +29,7 @@ fun StageScaffold(content: @Composable () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(PracticeColors.StageBrush)
-            .padding(24.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         content()
     }
@@ -45,7 +47,11 @@ fun LightPanel(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        Box(Modifier.padding(18.dp)) {
+        Box(
+            Modifier
+                .padding(14.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             content()
         }
     }
@@ -63,7 +69,11 @@ fun DarkPanel(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        Box(Modifier.padding(18.dp)) {
+        Box(
+            Modifier
+                .padding(14.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             content()
         }
     }
@@ -82,7 +92,7 @@ fun PrimaryAction(
             containerColor = PracticeColors.Sky,
             contentColor = Color.White
         ),
-        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp)
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
     ) {
         Text(text, fontWeight = FontWeight.Bold)
     }

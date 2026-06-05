@@ -15,8 +15,8 @@ class VoiceUiStateTest {
 
         assertEquals(VoiceInputMode.DemoFallback, state.mode)
         assertFalse(state.canStartSpeech)
-        assertTrue(state.statusText.contains("Demo"))
-        assertEquals("Use Speech", state.modeAction)
+        assertTrue(state.statusText.contains("演示"))
+        assertEquals("语音模式", state.modeAction)
     }
 
     @Test
@@ -28,7 +28,19 @@ class VoiceUiStateTest {
 
         assertEquals(VoiceInputMode.SpeechRecognizer, state.mode)
         assertTrue(state.canStartSpeech)
-        assertEquals("Start Speech", state.speechAction)
+        assertEquals("开始语音", state.speechAction)
+    }
+
+    @Test
+    fun speechStartCanRecoverFromDemoModeWhenCapabilitiesAreReady() {
+        val state = VoiceUiState.initial(
+            recognizerAvailable = true,
+            audioPermissionGranted = true
+        ).useDemoMode().startSpeechFromCurrentMode()
+
+        assertEquals(VoiceInputMode.SpeechRecognizer, state.mode)
+        assertTrue(state.isListening)
+        assertEquals(null, state.errorMessage)
     }
 
     @Test
@@ -58,7 +70,7 @@ class VoiceUiStateTest {
         assertEquals(VoiceInputMode.DemoFallback, state.mode)
         assertFalse(state.isListening)
         assertTrue(state.errorMessage.orEmpty().contains("No speech"))
-        assertEquals("Use Speech", state.modeAction)
+        assertEquals("语音模式", state.modeAction)
     }
 
     @Test
@@ -70,6 +82,6 @@ class VoiceUiStateTest {
 
         assertEquals(VoiceInputMode.SpeechRecognizer, state.mode)
         assertFalse(state.ttsEnabled)
-        assertEquals("Enable TTS", state.ttsAction)
+        assertEquals("打开朗读", state.ttsAction)
     }
 }

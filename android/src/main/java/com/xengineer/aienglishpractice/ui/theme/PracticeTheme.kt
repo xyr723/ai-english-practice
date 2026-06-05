@@ -3,11 +3,13 @@ package com.xengineer.aienglishpractice.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 
 object PracticeColors {
     val Ink = Color(0xFF182A2E)
@@ -50,6 +52,18 @@ private val DarkScheme: ColorScheme = darkColorScheme(
     onSurface = Color.White
 )
 
+private val CompactTypography = Typography(
+    headlineLarge = Typography().headlineLarge.copy(fontSize = 28.sp, lineHeight = 34.sp),
+    headlineMedium = Typography().headlineMedium.copy(fontSize = 22.sp, lineHeight = 28.sp),
+    headlineSmall = Typography().headlineSmall.copy(fontSize = 18.sp, lineHeight = 24.sp),
+    titleLarge = Typography().titleLarge.copy(fontSize = 18.sp, lineHeight = 24.sp),
+    titleMedium = Typography().titleMedium.copy(fontSize = 14.sp, lineHeight = 20.sp),
+    bodyLarge = Typography().bodyLarge.copy(fontSize = 14.sp, lineHeight = 20.sp),
+    bodyMedium = Typography().bodyMedium.copy(fontSize = 13.sp, lineHeight = 18.sp),
+    bodySmall = Typography().bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+    labelLarge = Typography().labelLarge.copy(fontSize = 13.sp, lineHeight = 18.sp)
+)
+
 @Composable
 fun PracticeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -57,6 +71,7 @@ fun PracticeTheme(
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkScheme else LightScheme,
+        typography = CompactTypography,
         content = content
     )
 }

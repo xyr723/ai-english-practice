@@ -29,19 +29,19 @@ class PracticeHistoryStoreTest {
     @Test
     fun entryFromSummaryPreservesSummaryFieldsForHistoryPage() {
         val scenario = PracticeScenario.interview()
-        val summary = summary(averageScore = 91, nextGoal = "Practice a stronger project example.")
+        val summary = summary(averageScore = 91, nextGoal = "下次练习更有说服力的项目案例。")
 
         val entry = PracticeHistoryEntry.fromSummary(
             id = "entry-interview",
             scenario = scenario,
             summary = summary,
-            completedAtLabel = "Today 10:00"
+            completedAtLabel = "今天 10:00"
         )
 
         assertEquals("entry-interview", entry.id)
         assertEquals("interview", entry.scenarioId)
-        assertEquals("Interview Practice", entry.scenarioName)
-        assertEquals("Today 10:00", entry.completedAtLabel)
+        assertEquals("面试练习", entry.scenarioName)
+        assertEquals("今天 10:00", entry.completedAtLabel)
         assertEquals(91, entry.averageScore)
         assertEquals(summary, entry.toSummary())
     }
@@ -79,18 +79,18 @@ class PracticeHistoryStoreTest {
         id = id,
         scenario = scenario,
         summary = summary(averageScore = averageScore, turnCount = turnCount),
-        completedAtLabel = "Just now"
+        completedAtLabel = "刚刚"
     )
 
     private fun summary(
         averageScore: Int = 82,
         turnCount: Int = 1,
-        nextGoal: String = "Practice the same scene again."
+        nextGoal: String = "重复练习同一场景。"
     ): PracticeSummary = PracticeSummary(
         turnCount = turnCount,
         averageScore = averageScore,
-        strengths = listOf("Completed the practice flow."),
-        improvements = listOf("Review corrected expressions."),
+        strengths = listOf("已完成练习流程。"),
+        improvements = listOf("复习优化表达。"),
         nextGoal = nextGoal
     )
 }

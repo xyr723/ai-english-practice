@@ -19,9 +19,9 @@ data class HomeDashboard(
                     streakDays = 1
                 ),
                 quickActions = listOf(
-                    QuickAction("Browse scenarios", AppRoute.Scenarios),
-                    QuickAction("History", AppRoute.History),
-                    QuickAction("Settings", AppRoute.Settings)
+                    QuickAction("浏览场景", AppRoute.Scenarios),
+                    QuickAction("练习记录", AppRoute.History),
+                    QuickAction("设置", AppRoute.Settings)
                 ),
                 recentSummary = latestHistory?.toSummary(),
                 recentHistory = latestHistory

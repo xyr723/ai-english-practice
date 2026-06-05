@@ -27,13 +27,13 @@ data class PracticeScenario(
     companion object {
         fun restaurant(): PracticeScenario = PracticeScenario(
             id = "restaurant",
-            name = "Restaurant Ordering",
-            role = "Waitress",
+            name = "餐厅点餐",
+            role = "服务员",
             opening = "Welcome! What would you like to order today?",
-            description = "Order food and drinks in a cafe while keeping the conversation polite and clear.",
+            description = "练习在咖啡店点餐，重点是礼貌表达和清晰回应。",
             level = "A2",
             estimatedMinutes = 8,
-            sceneTone = "warm cafe service",
+            sceneTone = "温和服务场景",
             goals = listOf(
                 "order_food_or_drink",
                 "use_polite_expression",
@@ -65,13 +65,13 @@ data class PracticeScenario(
 
         fun interview(): PracticeScenario = PracticeScenario(
             id = "interview",
-            name = "Interview Practice",
-            role = "Interviewer",
+            name = "面试练习",
+            role = "面试官",
             opening = "Thanks for joining today. Could you briefly introduce yourself?",
-            description = "Answer common interview questions with concise, confident, and professional wording.",
+            description = "练习常见面试问题，用简洁、自信、专业的英语作答。",
             level = "A2-B1",
             estimatedMinutes = 10,
-            sceneTone = "formal interview coaching",
+            sceneTone = "正式面试训练",
             goals = listOf(
                 "introduce_self",
                 "describe_experience",
@@ -103,13 +103,13 @@ data class PracticeScenario(
 
         fun meeting(): PracticeScenario = PracticeScenario(
             id = "meeting",
-            name = "Meeting Discussion",
-            role = "Project Lead",
+            name = "会议讨论",
+            role = "项目负责人",
             opening = "Let's review the plan. What should we discuss first?",
-            description = "Practice giving opinions, asking follow-up questions, and confirming next steps in a meeting.",
+            description = "练习表达观点、追问细节，并在会议中确认下一步。",
             level = "B1",
             estimatedMinutes = 10,
-            sceneTone = "collaborative workplace meeting",
+            sceneTone = "协作会议场景",
             goals = listOf(
                 "give_opinion",
                 "ask_clarifying_question",

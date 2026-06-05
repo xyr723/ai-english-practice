@@ -22,10 +22,10 @@ class ScenarioCatalogTest {
 
         assertNotNull(scenario)
         requireNotNull(scenario)
-        assertEquals("Interview Practice", scenario.name)
-        assertEquals("Interviewer", scenario.role)
+        assertEquals("面试练习", scenario.name)
+        assertEquals("面试官", scenario.role)
         assertEquals("A2-B1", scenario.level)
-        assertTrue(scenario.sceneTone.contains("formal", ignoreCase = true))
+        assertTrue(scenario.sceneTone.contains("正式"))
         assertTrue(scenario.goals.contains("describe_experience"))
     }
 
