@@ -171,7 +171,7 @@ fun PracticeScreen(
                     )
                 )
                 session.recordAnalyzedTurn(backendResult)
-                backendState = activeBackendState.withBackendSuccess()
+                backendState = activeBackendState.withBackendSuccess(backendResult.source)
                 uiState = PracticeUiState.speaking(
                     scenario = scenario,
                     turnResult = backendResult
@@ -601,6 +601,9 @@ private fun android.content.Context.hasRecordAudioPermission(): Boolean =
 
 private fun CoachFeedbackSource.label(): String = when (this) {
     CoachFeedbackSource.BackendApi -> "云端教练"
+    CoachFeedbackSource.BackendRule -> "云端规则"
+    CoachFeedbackSource.LanguageTool -> "LanguageTool"
+    CoachFeedbackSource.BackendRuleFallback -> "云端规则 fallback"
     CoachFeedbackSource.LocalFallback -> "本地分析"
     CoachFeedbackSource.BackendError -> "云端错误"
 }

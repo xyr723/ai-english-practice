@@ -69,7 +69,7 @@ private fun JSONObject.toTurnResult(userText: String): TurnResult = TurnResult(
     tips = getJSONArray("tips").let { tipsJson ->
         List(tipsJson.length()) { index -> tipsJson.getString(index) }
     },
-    source = CoachFeedbackSource.BackendApi
+    source = CoachFeedbackSource.fromBackendSource(optString("source"))
 )
 
 private fun JSONObject.toScoreBundle(): ScoreBundle = ScoreBundle(
