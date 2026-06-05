@@ -177,7 +177,8 @@ data class TurnResult(
     val betterExpression: String,
     val reply: String,
     val scores: ScoreBundle,
-    val tips: List<String>
+    val tips: List<String>,
+    val source: CoachFeedbackSource = CoachFeedbackSource.LocalFallback
 )
 
 data class PracticeSummary(
