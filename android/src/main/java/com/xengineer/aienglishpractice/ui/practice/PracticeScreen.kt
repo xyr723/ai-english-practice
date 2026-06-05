@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,12 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.xengineer.aienglishpractice.core.PracticeState
+import com.xengineer.aienglishpractice.core.PracticeStep
+import com.xengineer.aienglishpractice.core.PracticeUiState
 import com.xengineer.aienglishpractice.core.PracticeSession
-import com.xengineer.aienglishpractice.core.PracticeSummary
+import com.xengineer.aienglishpractice.core.PracticeScenario
 import com.xengineer.aienglishpractice.core.RuleCorrectionEngine
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.core.ScoreEngine
-import com.xengineer.aienglishpractice.core.TurnResult
 import com.xengineer.aienglishpractice.ui.shared.DarkPanel
 import com.xengineer.aienglishpractice.ui.shared.LightPanel
 import com.xengineer.aienglishpractice.ui.shared.PrimaryAction
@@ -41,15 +44,55 @@ fun PracticeScreen(
     val scenario = remember(scenarioId) {
         ScenarioCatalog.findById(scenarioId) ?: ScenarioCatalog.recommended()
     }
-    val session = remember(scenarioId) {
-        PracticeSession(
-            scenario = scenario,
-            correctionEngine = RuleCorrectionEngine(),
-            scoreEngine = ScoreEngine()
-        ).also { it.start() }
+    var session by remember(scenarioId) { mutableStateOf(newPracticeSession(scenario)) }
+    var uiState by remember(scenarioId) { mutableStateOf(PracticeUiState.initial(scenario)) }
+    val demoTranscript = remember(scenarioId) { demoTranscriptFor(scenario.id) }
+
+    fun restartScene() {
+        session = newPracticeSession(scenario)
+        uiState = PracticeUiState.initial(scenario)
     }
-    var turnResult by remember { mutableStateOf<TurnResult?>(null) }
-    var summary by remember { mutableStateOf<PracticeSummary?>(null) }
+
+    fun showFeedback() {
+        val transcript = uiState.transcript.ifBlank { demoTranscript }
+        val result = session.submitTurn(
+            text = transcript,
+            durationMs = demoDurationFor(scenario.id),
+            asrConfidence = demoConfidenceFor(scenario.id)
+        )
+        uiState = PracticeUiState.speaking(
+            scenario = scenario,
+            turnResult = result
+        )
+    }
+
+    fun advancePrimary() {
+        uiState = when (uiState.phase) {
+            PracticeState.Idle -> PracticeUiState.listening(scenario)
+            PracticeState.Listening -> PracticeUiState.recognizing(
+                scenario = scenario,
+                transcript = demoTranscript
+            )
+
+            PracticeState.Recognizing -> PracticeUiState.thinking(
+                scenario = scenario,
+                transcript = uiState.transcript
+            )
+
+            PracticeState.Thinking -> {
+                showFeedback()
+                return
+            }
+
+            PracticeState.Speaking -> PracticeUiState.listening(scenario)
+            PracticeState.Finished -> {
+                restartScene()
+                return
+            }
+
+            PracticeState.Error -> PracticeUiState.initial(scenario)
+        }
+    }
 
     StageScaffold {
         Column(
@@ -67,24 +110,30 @@ fun PracticeScreen(
                     .weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                FeedbackPanel(turnResult, modifier = Modifier.weight(0.9f))
+                StatusPanel(uiState = uiState, modifier = Modifier.weight(0.75f))
+                FeedbackPanel(uiState = uiState, modifier = Modifier.weight(1f))
                 CoachPanel(
                     opening = scenario.opening,
-                    turnResult = turnResult,
-                    summary = summary,
+                    uiState = uiState,
                     modifier = Modifier.weight(1.1f)
                 )
             }
             PracticeControls(
-                onSubmitDemo = {
-                    summary = null
-                    turnResult = session.submitTurn(
-                        text = "I want order a coffee",
-                        durationMs = 6000,
-                        asrConfidence = 0.8f
+                uiState = uiState,
+                onPrimaryAction = { advancePrimary() },
+                onFinish = {
+                    val summary = session.finish()
+                    uiState = PracticeUiState.finished(
+                        scenario = scenario,
+                        summary = summary
                     )
                 },
-                onFinish = { summary = session.finish() }
+                onSimulateError = {
+                    uiState = PracticeUiState.error(
+                        scenario = scenario,
+                        message = "Microphone permission is unavailable. Recover and continue with demo mode."
+                    )
+                }
             )
         }
     }
@@ -117,15 +166,70 @@ private fun PracticeHeader(
 }
 
 @Composable
-private fun FeedbackPanel(turnResult: TurnResult?, modifier: Modifier = Modifier) {
+private fun StatusPanel(uiState: PracticeUiState, modifier: Modifier = Modifier) {
     DarkPanel(modifier = modifier.fillMaxWidth()) {
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Live state", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+            Text(
+                text = uiState.statusTitle,
+                color = Color.White,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(uiState.statusBody, color = Color(0xFFEAD7C4))
+            Spacer(Modifier.height(4.dp))
+            uiState.timeline.forEach { step ->
+                TimelineRow(step)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineRow(step: PracticeStep) {
+    val marker = when {
+        step.isActive -> ">"
+        step.isComplete -> "done"
+        else -> "-"
+    }
+    val markerColor = when {
+        step.isActive -> PracticeColors.Amber
+        step.isComplete -> PracticeColors.Mint
+        else -> Color(0xFFBFA896)
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = marker,
+            modifier = Modifier.width(44.dp),
+            color = markerColor,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = step.label,
+            color = if (step.isActive) Color.White else Color(0xFFEAD7C4),
+            fontWeight = if (step.isActive) FontWeight.Bold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+private fun FeedbackPanel(uiState: PracticeUiState, modifier: Modifier = Modifier) {
+    val turnResult = uiState.turnResult
+    val transcript = when {
+        uiState.phase == PracticeState.Listening -> "Listening for your answer..."
+        uiState.transcript.isNotBlank() -> uiState.transcript
+        else -> "Transcript appears after recognition."
+    }
+
+    DarkPanel(modifier = modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("You said", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
-            Text(turnResult?.userText ?: "Ready for your first turn.", color = Color.White)
-            Spacer(Modifier.height(16.dp))
+            Text(transcript, color = Color.White)
             Text("Better expression", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
-            Text(turnResult?.betterExpression ?: "Feedback appears after a turn.", color = Color.White)
-            Spacer(Modifier.height(16.dp))
+            Text(
+                turnResult?.betterExpression ?: "Correction appears after the coach check.",
+                color = Color.White
+            )
             Text("Tips", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
             Text(turnResult?.tips?.joinToString("\n") ?: "No tips yet.", color = Color.White)
         }
@@ -135,21 +239,21 @@ private fun FeedbackPanel(turnResult: TurnResult?, modifier: Modifier = Modifier
 @Composable
 private fun CoachPanel(
     opening: String,
-    turnResult: TurnResult?,
-    summary: PracticeSummary?,
+    uiState: PracticeUiState,
     modifier: Modifier = Modifier
 ) {
+    val turnResult = uiState.turnResult
+    val summary = uiState.summary
+
     LightPanel(modifier = modifier.fillMaxWidth()) {
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Coach reply", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
-            Text(turnResult?.reply ?: opening)
-            Spacer(Modifier.height(18.dp))
+            Text(replyText(opening, uiState))
             ScoreRow("Grammar", turnResult?.scores?.grammar?.score)
             ScoreRow("Fluency", turnResult?.scores?.fluency?.score)
             ScoreRow("Pronunciation", turnResult?.scores?.pronunciation?.score)
             ScoreRow("Completion", turnResult?.scores?.completion?.score)
             if (summary != null) {
-                Spacer(Modifier.height(18.dp))
                 Text("Summary", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
                 Text("Turns: ${summary.turnCount}  Average: ${summary.averageScore}")
                 Text(summary.nextGoal)
@@ -167,13 +271,66 @@ private fun ScoreRow(label: String, score: Int?) {
 }
 
 @Composable
-private fun PracticeControls(onSubmitDemo: () -> Unit, onFinish: () -> Unit) {
+private fun PracticeControls(
+    uiState: PracticeUiState,
+    onPrimaryAction: () -> Unit,
+    onFinish: () -> Unit,
+    onSimulateError: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        PrimaryAction(text = "Demo Turn", onClick = onSubmitDemo)
-        Spacer(Modifier.width(16.dp))
-        PrimaryAction(text = "Finish", onClick = onFinish)
+        PrimaryAction(
+            text = uiState.primaryAction,
+            onClick = onPrimaryAction,
+            modifier = Modifier.widthIn(min = 156.dp)
+        )
+        if (uiState.canFinish) {
+            Spacer(Modifier.width(16.dp))
+            PrimaryAction(text = "Finish", onClick = onFinish)
+        }
+        if (uiState.phase != PracticeState.Finished) {
+            Spacer(Modifier.width(16.dp))
+            TextButton(onClick = onSimulateError) {
+                Text("Simulate Error", color = Color.White)
+            }
+        }
     }
+}
+
+private fun newPracticeSession(scenario: PracticeScenario): PracticeSession = PracticeSession(
+    scenario = scenario,
+    correctionEngine = RuleCorrectionEngine(),
+    scoreEngine = ScoreEngine()
+).also { session -> session.start() }
+
+private fun replyText(opening: String, uiState: PracticeUiState): String = when (uiState.phase) {
+    PracticeState.Idle,
+    PracticeState.Listening,
+    PracticeState.Recognizing -> opening
+
+    PracticeState.Thinking -> "Give me a moment. I am checking your answer."
+    PracticeState.Speaking -> uiState.turnResult?.reply ?: opening
+    PracticeState.Finished -> "Good work. Review the summary before restarting."
+    PracticeState.Error -> "Recover the session, then continue with the same scene."
+}
+
+private fun demoTranscriptFor(scenarioId: String): String = when (scenarioId) {
+    "interview" -> "I have experience in a team project, and I built a small Android demo."
+    "meeting" -> "I think the timeline risk is high, and the next step should be a shorter plan."
+    else -> "I want order a coffee"
+}
+
+private fun demoDurationFor(scenarioId: String): Int = when (scenarioId) {
+    "interview" -> 8500
+    "meeting" -> 9000
+    else -> 6000
+}
+
+private fun demoConfidenceFor(scenarioId: String): Float = when (scenarioId) {
+    "interview" -> 0.86f
+    "meeting" -> 0.9f
+    else -> 0.8f
 }

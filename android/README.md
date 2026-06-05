@@ -44,9 +44,10 @@ android/build/outputs/apk/debug/android-debug.apk
 3. 点击 `Scenarios` 进入本地场景列表，当前包含点餐、面试、会议三个场景。
 4. 点击场景卡片进入详情页，查看角色、等级、目标、关键词和对话节奏。
 5. 点击 `Start Practice` 进入对应场景的横屏练习页。
-6. 点击 `Demo Turn`，模拟用户完成一轮英文输入。
-7. 页面展示推荐表达、纠错提示、AI 回复和四维评分。
-8. 点击 `Finish` 展示课后总结。
+6. 练习页展示 `Ready`、`Listening`、`Recognized transcript`、`Coach is checking`、`Feedback ready`、`Session complete` 和错误恢复状态。
+7. 按状态点击 `Start Listening`、`Recognize Demo`、`Ask Coach`、`Show Feedback`，模拟完成一轮英文输入和反馈。
+8. 页面展示推荐表达、纠错提示、AI 回复和四维评分。
+9. 点击 `Finish` 展示课后总结，点击 `Restart Scene` 可重新开始同一场景。
 
 这条链路复用 `PracticeSession`、`RuleCorrectionEngine` 和 `ScoreEngine`，后续 SpeechRecognizer/TTS 接入时不需要重写评分与总结逻辑。
 
@@ -55,10 +56,11 @@ android/build/outputs/apk/debug/android-debug.apk
 - `ui.home.HomeScreen`：首页，负责推荐练习和快捷入口。
 - `ui.scenario.ScenarioListScreen`：场景列表页，展示本地场景数据和训练概览。
 - `ui.scenario.ScenarioDetailScreen`：场景详情页，展示训练目标、关键词和对话节奏。
-- `ui.practice.PracticeScreen`：横屏练习页，负责当前文本 fallback 闭环。
+- `ui.practice.PracticeScreen`：横屏练习页，负责完整状态展示、文本 fallback、反馈和总结闭环。
 - `ui.shared.PlaceholderScreen`：历史、设置的同风格占位页面。
 - `ui.theme.PracticeTheme`：颜色和 Material 主题。
 - `core.ScenarioCatalog`：本地场景目录，提供推荐场景、列表和按 id 查询。
+- `core.PracticeUiState`：练习页状态模型，统一维护状态文案、主操作、时间线、结束和错误恢复标记。
 - `core.AppNavigator`：轻量路由状态，当前覆盖 Home、Scenarios、ScenarioDetail、Practice、History、Settings。
 
 ## 实现顺序
