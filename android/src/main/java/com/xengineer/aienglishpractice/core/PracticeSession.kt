@@ -10,6 +10,9 @@ class PracticeSession(
 
     private val turns = mutableListOf<TurnResult>()
 
+    val turnCount: Int
+        get() = turns.size
+
     fun start() {
         state = PracticeState.Idle
     }
@@ -39,6 +42,12 @@ class PracticeSession(
             tips = correction.issues.map { it.message }
         )
 
+        turns += result
+        state = PracticeState.Speaking
+        return result
+    }
+
+    fun recordAnalyzedTurn(result: TurnResult): TurnResult {
         turns += result
         state = PracticeState.Speaking
         return result
@@ -74,7 +83,7 @@ class PracticeSession(
 
     private fun matchedGoals(text: String): List<String> {
         val lowered = text.lowercase()
-        val matched = mutableListOf<String>()
+        val matched = linkedSetOf<String>()
 
         if (
             "order_food_or_drink" in scenario.goals &&
@@ -97,6 +106,29 @@ class PracticeSession(
             matched += "answer_follow_up_question"
         }
 
-        return matched
+        scenario.goals.forEach { goal ->
+            if (matchesGoal(goal, lowered)) {
+                matched += goal
+            }
+        }
+
+        if (matched.isEmpty() && scenario.keywords.any { keyword -> keyword.lowercase() in lowered }) {
+            matched += scenario.goals.first()
+        }
+
+        return matched.toList()
+    }
+
+    private fun matchesGoal(goal: String, loweredText: String): Boolean {
+        val markers = when (goal) {
+            "introduce_self" -> listOf("my name", "i am", "i'm", "student", "developer")
+            "describe_experience" -> listOf("experience", "project", "worked", "built", "team")
+            "give_opinion" -> listOf("i think", "i believe", "should", "agree")
+            "ask_clarifying_question" -> listOf("?", "what", "how", "could you", "risk")
+            "confirm_next_step" -> listOf("next step", "assign", "will", "follow up", "plan")
+            else -> emptyList()
+        }
+
+        return markers.any { marker -> marker in loweredText }
     }
 }

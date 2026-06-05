@@ -8,14 +8,21 @@ import androidx.compose.runtime.setValue
 import com.xengineer.aienglishpractice.core.AppNavigator
 import com.xengineer.aienglishpractice.core.AppRoute
 import com.xengineer.aienglishpractice.core.HomeDashboard
+import com.xengineer.aienglishpractice.core.LocalPracticeHistory
+import com.xengineer.aienglishpractice.core.ScenarioCatalog
+import com.xengineer.aienglishpractice.ui.history.HistoryScreen
 import com.xengineer.aienglishpractice.ui.home.HomeScreen
 import com.xengineer.aienglishpractice.ui.practice.PracticeScreen
+import com.xengineer.aienglishpractice.ui.scenario.ScenarioDetailScreen
+import com.xengineer.aienglishpractice.ui.scenario.ScenarioListScreen
 import com.xengineer.aienglishpractice.ui.shared.PlaceholderScreen
 
 @Composable
 fun AppRoot() {
     val navigator = remember { AppNavigator() }
     var route by remember { mutableStateOf(navigator.currentRoute) }
+    var historyRevision by remember { mutableStateOf(0) }
+    val historyStore = LocalPracticeHistory.store
 
     fun navigate(action: AppNavigator.() -> Unit) {
         navigator.action()
@@ -23,32 +30,50 @@ fun AppRoot() {
     }
 
     when (val current = route) {
-        AppRoute.Home -> HomeScreen(
-            dashboard = HomeDashboard.default(),
-            onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
-            onOpenScenarios = { navigate { openScenarios() } },
-            onOpenHistory = { navigate { openHistory() } },
-            onOpenSettings = { navigate { openSettings() } }
-        )
+        AppRoute.Home -> {
+            historyRevision
+            HomeScreen(
+                dashboard = HomeDashboard.default(historyStore = historyStore),
+                onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
+                onOpenScenarios = { navigate { openScenarios() } },
+                onOpenHistory = { navigate { openHistory() } },
+                onOpenSettings = { navigate { openSettings() } }
+            )
+        }
 
         is AppRoute.Practice -> PracticeScreen(
             scenarioId = current.scenarioId,
+            onBackHome = { navigate { goHome() } },
+            onSessionFinished = { entry ->
+                historyStore.record(entry)
+                historyRevision += 1
+            }
+        )
+
+        AppRoute.Scenarios -> ScenarioListScreen(
+            scenarios = ScenarioCatalog.all(),
+            onOpenDetail = { scenarioId -> navigate { openScenarioDetail(scenarioId) } },
             onBackHome = { navigate { goHome() } }
         )
 
-        AppRoute.Scenarios -> PlaceholderScreen(
-            title = "Scenarios",
-            body = "Restaurant is ready. Interview and meeting scenarios are next.",
-            action = "Back home",
-            onAction = { navigate { goHome() } }
+        is AppRoute.ScenarioDetail -> ScenarioDetailScreen(
+            scenario = ScenarioCatalog.findById(current.scenarioId) ?: ScenarioCatalog.recommended(),
+            onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
+            onBackList = { navigate { openScenarios() } }
         )
 
-        AppRoute.History -> PlaceholderScreen(
-            title = "Practice history",
-            body = "Completed sessions will appear here after local history storage is added.",
-            action = "Back home",
-            onAction = { navigate { goHome() } }
-        )
+        AppRoute.History -> {
+            historyRevision
+            HistoryScreen(
+                entries = historyStore.recent(),
+                onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
+                onClearHistory = {
+                    historyStore.clear()
+                    historyRevision += 1
+                },
+                onBackHome = { navigate { goHome() } }
+            )
+        }
 
         AppRoute.Settings -> PlaceholderScreen(
             title = "Settings",

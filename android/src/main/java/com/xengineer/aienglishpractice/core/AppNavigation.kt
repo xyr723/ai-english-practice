@@ -5,6 +5,7 @@ sealed interface AppRoute {
     data object Scenarios : AppRoute
     data object History : AppRoute
     data object Settings : AppRoute
+    data class ScenarioDetail(val scenarioId: String) : AppRoute
     data class Practice(val scenarioId: String) : AppRoute
 }
 
@@ -18,6 +19,10 @@ class AppNavigator(initialRoute: AppRoute = AppRoute.Home) {
 
     fun openScenarios() {
         currentRoute = AppRoute.Scenarios
+    }
+
+    fun openScenarioDetail(scenarioId: String) {
+        currentRoute = AppRoute.ScenarioDetail(scenarioId)
     }
 
     fun openHistory() {
