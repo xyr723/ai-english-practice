@@ -5,11 +5,17 @@ enum class VoiceInputMode {
     SpeechRecognizer
 }
 
+enum class SpeechListenMode {
+    Standard,
+    Extended
+}
+
 data class VoiceUiState(
     val mode: VoiceInputMode,
     val recognizerAvailable: Boolean,
     val audioPermissionGranted: Boolean,
     val isListening: Boolean = false,
+    val listenMode: SpeechListenMode = SpeechListenMode.Standard,
     val partialTranscript: String = "",
     val finalTranscript: String = "",
     val errorMessage: String? = null,
@@ -31,6 +37,7 @@ data class VoiceUiState(
             mode == VoiceInputMode.DemoFallback && !recognizerAvailable -> "语音不可用，可用演示。"
             mode == VoiceInputMode.DemoFallback && !audioPermissionGranted -> "需麦克风权限，可用演示。"
             mode == VoiceInputMode.DemoFallback -> "演示模式可用。"
+            isListening && listenMode == SpeechListenMode.Extended -> "长时聆听中。"
             isListening -> "正在聆听。"
             bestTranscript.isNotBlank() -> "转写已就绪。"
             else -> "语音模式已就绪。"
@@ -40,7 +47,11 @@ data class VoiceUiState(
         get() = if (mode == VoiceInputMode.SpeechRecognizer) "演示模式" else "语音模式"
 
     val speechAction: String
-        get() = if (isListening) "聆听中..." else "开始语音"
+        get() = when {
+            isListening && listenMode == SpeechListenMode.Extended -> "长时聆听中..."
+            isListening -> "聆听中..."
+            else -> "开始语音"
+        }
 
     val ttsAction: String
         get() = if (ttsEnabled) "关闭朗读" else "打开朗读"
@@ -48,6 +59,7 @@ data class VoiceUiState(
     fun useDemoMode(): VoiceUiState = copy(
         mode = VoiceInputMode.DemoFallback,
         isListening = false,
+        listenMode = SpeechListenMode.Standard,
         errorMessage = null
     )
 
@@ -75,9 +87,10 @@ data class VoiceUiState(
         )
     }
 
-    fun startListening(): VoiceUiState = if (canStartSpeech) {
+    fun startListening(listenMode: SpeechListenMode = SpeechListenMode.Standard): VoiceUiState = if (canStartSpeech) {
         copy(
             isListening = true,
+            listenMode = listenMode,
             partialTranscript = "",
             finalTranscript = "",
             errorMessage = null
@@ -86,11 +99,14 @@ data class VoiceUiState(
         copy(
             mode = VoiceInputMode.DemoFallback,
             isListening = false,
+            listenMode = SpeechListenMode.Standard,
             errorMessage = "语音输入未就绪，可使用演示模式。"
         )
     }
 
-    fun startSpeechFromCurrentMode(): VoiceUiState = useSpeechMode().startListening()
+    fun startSpeechFromCurrentMode(
+        listenMode: SpeechListenMode = SpeechListenMode.Standard
+    ): VoiceUiState = useSpeechMode().startListening(listenMode)
 
     fun withPartialTranscript(text: String): VoiceUiState = copy(
         partialTranscript = text,
@@ -99,6 +115,7 @@ data class VoiceUiState(
 
     fun withFinalTranscript(text: String): VoiceUiState = copy(
         isListening = false,
+        listenMode = SpeechListenMode.Standard,
         finalTranscript = text,
         partialTranscript = "",
         errorMessage = null
@@ -107,6 +124,7 @@ data class VoiceUiState(
     fun withRecognitionError(message: String): VoiceUiState = copy(
         mode = VoiceInputMode.DemoFallback,
         isListening = false,
+        listenMode = SpeechListenMode.Standard,
         errorMessage = message
     )
 

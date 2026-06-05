@@ -53,6 +53,18 @@ def next_reply(scenario: Dict[str, object], turn_text: str, turn_index: int) -> 
     return "Could you say that again, please?"
 
 
+def next_reply_translation(scenario: Dict[str, object], turn_index: int) -> str:
+    turns = scenario.get("turns", [])
+    if isinstance(turns, list) and 0 <= turn_index < len(turns):
+        return str(turns[turn_index].get("replyTranslation", ""))
+
+    fallback_translations = scenario.get("fallbackReplyTranslations", [])
+    if isinstance(fallback_translations, list) and fallback_translations:
+        return str(fallback_translations[0])
+
+    return ""
+
+
 def matched_goals(scenario: Dict[str, object], text: str) -> List[str]:
     lowered = text.lower()
     goals = scenario.get("goals", [])
@@ -78,4 +90,3 @@ def _has_polite_expression(lowered_text: str) -> bool:
 def _answers_follow_up(lowered_text: str) -> bool:
     markers = ("yes", "no", "for here", "takeaway", "to go")
     return any(marker in lowered_text for marker in markers)
-

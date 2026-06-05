@@ -38,6 +38,7 @@ class PracticeSession(
             userText = text,
             betterExpression = correction.betterExpression,
             reply = nextReply(),
+            replyTranslation = nextReplyTranslation(),
             scores = scores,
             tips = correction.issues.map { it.message }
         )
@@ -79,6 +80,13 @@ class PracticeSession(
         return scenario.turns.getOrNull(index)?.reply
             ?: scenario.fallbackReplies.firstOrNull()
             ?: "Could you say that again, please?"
+    }
+
+    private fun nextReplyTranslation(): String {
+        val index = turns.size
+        return scenario.turns.getOrNull(index)?.replyTranslation
+            ?: scenario.fallbackReplyTranslations.firstOrNull()
+            ?: ""
     }
 
     private fun matchedGoals(text: String): List<String> {

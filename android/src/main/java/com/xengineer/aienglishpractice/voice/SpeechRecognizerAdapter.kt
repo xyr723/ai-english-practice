@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.xengineer.aienglishpractice.core.SpeechListenMode
+import com.xengineer.aienglishpractice.core.SpeechTranscriptFormatter
 import java.util.Locale
 
 class SpeechRecognizerAdapter(
@@ -16,7 +18,10 @@ class SpeechRecognizerAdapter(
 
     fun isAvailable(): Boolean = SpeechRecognizer.isRecognitionAvailable(context)
 
-    fun startListening(callbacks: SpeechRecognitionCallbacks) {
+    fun startListening(
+        callbacks: SpeechRecognitionCallbacks,
+        listenMode: SpeechListenMode = SpeechListenMode.Standard
+    ) {
         if (!isAvailable()) {
             callbacks.onError("当前设备不可用语音识别。")
             return
@@ -27,7 +32,7 @@ class SpeechRecognizerAdapter(
         val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = speechRecognizer
         speechRecognizer.setRecognitionListener(AndroidRecognitionListener(callbacks))
-        speechRecognizer.startListening(recognizerIntent())
+        speechRecognizer.startListening(recognizerIntent(listenMode))
     }
 
     fun stopListening() {
@@ -39,12 +44,25 @@ class SpeechRecognizerAdapter(
         recognizer = null
     }
 
-    private fun recognizerIntent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
-        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-    }
+    private fun recognizerIntent(listenMode: SpeechListenMode): Intent =
+        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(
+                RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+                listenMode.completeSilenceMillis
+            )
+            putExtra(
+                RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                listenMode.possiblyCompleteSilenceMillis
+            )
+            putExtra(
+                RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,
+                listenMode.minimumLengthMillis
+            )
+        }
 
     private class AndroidRecognitionListener(
         private val callbacks: SpeechRecognitionCallbacks
@@ -66,16 +84,34 @@ class SpeechRecognizerAdapter(
         }
 
         override fun onResults(results: Bundle?) {
-            callbacks.onFinal(results.bestRecognitionText())
+            callbacks.onFinal(SpeechTranscriptFormatter.normalize(results.bestRecognitionText()))
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
-            callbacks.onPartial(partialResults.bestRecognitionText())
+            callbacks.onPartial(SpeechTranscriptFormatter.normalize(partialResults.bestRecognitionText()))
         }
 
         override fun onEvent(eventType: Int, params: Bundle?) = Unit
     }
 }
+
+private val SpeechListenMode.completeSilenceMillis: Int
+    get() = when (this) {
+        SpeechListenMode.Standard -> 2500
+        SpeechListenMode.Extended -> 6500
+    }
+
+private val SpeechListenMode.possiblyCompleteSilenceMillis: Int
+    get() = when (this) {
+        SpeechListenMode.Standard -> 1500
+        SpeechListenMode.Extended -> 4500
+    }
+
+private val SpeechListenMode.minimumLengthMillis: Int
+    get() = when (this) {
+        SpeechListenMode.Standard -> 5000
+        SpeechListenMode.Extended -> 15000
+    }
 
 data class SpeechRecognitionCallbacks(
     val onReady: () -> Unit,

@@ -31,6 +31,7 @@ def test_coach_analyze_returns_reply_correction_and_scores():
 
     assert response.status_code == 200
     assert body["reply"] == "Sure. Would you like anything to drink?"
+    assert body["replyTranslation"] == "当然。你想喝点什么吗？"
     assert body["betterExpression"] == "I'd like to order a coffee, please."
     assert body["scores"]["pronunciation"]["score"] == 80
     assert body["source"] == "RULE_ONLY"
