@@ -11,6 +11,7 @@ class HomeDashboardTest {
 
         assertEquals("restaurant", dashboard.primaryScenario.id)
         assertEquals("Restaurant Ordering", dashboard.primaryScenario.name)
+        assertEquals(ScenarioCatalog.recommended(), dashboard.primaryScenario)
         assertTrue(dashboard.practiceStats.todayGoalMinutes > 0)
         assertTrue(dashboard.quickActions.any { it.route == AppRoute.Scenarios })
     }

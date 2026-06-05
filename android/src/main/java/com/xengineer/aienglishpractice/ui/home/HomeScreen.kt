@@ -118,7 +118,8 @@ fun HomeScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Metric(label = "Goals", value = dashboard.primaryScenario.goals.size.toString())
                             Metric(label = "Turns", value = dashboard.primaryScenario.turns.size.toString())
-                            Metric(label = "Mode", value = "A2")
+                            Metric(label = "Level", value = dashboard.primaryScenario.level)
+                            Metric(label = "Time", value = "${dashboard.primaryScenario.estimatedMinutes}m")
                         }
                     }
                 }

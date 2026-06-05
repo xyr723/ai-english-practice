@@ -8,7 +8,7 @@ data class HomeDashboard(
 ) {
     companion object {
         fun default(): HomeDashboard = HomeDashboard(
-            primaryScenario = PracticeScenario.restaurant(),
+            primaryScenario = ScenarioCatalog.recommended(),
             practiceStats = PracticeStats(
                 todayGoalMinutes = 12,
                 completedTurns = 0,

@@ -33,4 +33,15 @@ class AppNavigatorTest {
         navigator.goHome()
         assertEquals(AppRoute.Home, navigator.currentRoute)
     }
+
+    @Test
+    fun scenarioDetailCanStartSelectedPractice() {
+        val navigator = AppNavigator()
+
+        navigator.openScenarioDetail("meeting")
+        assertEquals(AppRoute.ScenarioDetail("meeting"), navigator.currentRoute)
+
+        navigator.startPractice("meeting")
+        assertEquals(AppRoute.Practice("meeting"), navigator.currentRoute)
+    }
 }

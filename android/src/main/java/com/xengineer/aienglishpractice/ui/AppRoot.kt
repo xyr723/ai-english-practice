@@ -8,8 +8,11 @@ import androidx.compose.runtime.setValue
 import com.xengineer.aienglishpractice.core.AppNavigator
 import com.xengineer.aienglishpractice.core.AppRoute
 import com.xengineer.aienglishpractice.core.HomeDashboard
+import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.ui.home.HomeScreen
 import com.xengineer.aienglishpractice.ui.practice.PracticeScreen
+import com.xengineer.aienglishpractice.ui.scenario.ScenarioDetailScreen
+import com.xengineer.aienglishpractice.ui.scenario.ScenarioListScreen
 import com.xengineer.aienglishpractice.ui.shared.PlaceholderScreen
 
 @Composable
@@ -36,11 +39,16 @@ fun AppRoot() {
             onBackHome = { navigate { goHome() } }
         )
 
-        AppRoute.Scenarios -> PlaceholderScreen(
-            title = "Scenarios",
-            body = "Restaurant is ready. Interview and meeting scenarios are next.",
-            action = "Back home",
-            onAction = { navigate { goHome() } }
+        AppRoute.Scenarios -> ScenarioListScreen(
+            scenarios = ScenarioCatalog.all(),
+            onOpenDetail = { scenarioId -> navigate { openScenarioDetail(scenarioId) } },
+            onBackHome = { navigate { goHome() } }
+        )
+
+        is AppRoute.ScenarioDetail -> ScenarioDetailScreen(
+            scenario = ScenarioCatalog.findById(current.scenarioId) ?: ScenarioCatalog.recommended(),
+            onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
+            onBackList = { navigate { openScenarios() } }
         )
 
         AppRoute.History -> PlaceholderScreen(

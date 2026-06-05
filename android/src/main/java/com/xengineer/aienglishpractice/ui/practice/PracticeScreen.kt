@@ -21,10 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.xengineer.aienglishpractice.core.PracticeScenario
 import com.xengineer.aienglishpractice.core.PracticeSession
 import com.xengineer.aienglishpractice.core.PracticeSummary
 import com.xengineer.aienglishpractice.core.RuleCorrectionEngine
+import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.core.ScoreEngine
 import com.xengineer.aienglishpractice.core.TurnResult
 import com.xengineer.aienglishpractice.ui.shared.DarkPanel
@@ -38,7 +38,9 @@ fun PracticeScreen(
     scenarioId: String,
     onBackHome: () -> Unit
 ) {
-    val scenario = remember(scenarioId) { PracticeScenario.restaurant() }
+    val scenario = remember(scenarioId) {
+        ScenarioCatalog.findById(scenarioId) ?: ScenarioCatalog.recommended()
+    }
     val session = remember(scenarioId) {
         PracticeSession(
             scenario = scenario,
@@ -56,7 +58,7 @@ fun PracticeScreen(
         ) {
             PracticeHeader(
                 title = scenario.name,
-                subtitle = "Goal: order politely, answer follow-up questions, and finish the scene.",
+                subtitle = "${scenario.level} · ${scenario.estimatedMinutes} min · ${scenario.sceneTone}",
                 onBackHome = onBackHome
             )
             Row(
@@ -66,7 +68,12 @@ fun PracticeScreen(
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 FeedbackPanel(turnResult, modifier = Modifier.weight(0.9f))
-                CoachPanel(turnResult, summary, modifier = Modifier.weight(1.1f))
+                CoachPanel(
+                    opening = scenario.opening,
+                    turnResult = turnResult,
+                    summary = summary,
+                    modifier = Modifier.weight(1.1f)
+                )
             }
             PracticeControls(
                 onSubmitDemo = {
@@ -127,6 +134,7 @@ private fun FeedbackPanel(turnResult: TurnResult?, modifier: Modifier = Modifier
 
 @Composable
 private fun CoachPanel(
+    opening: String,
     turnResult: TurnResult?,
     summary: PracticeSummary?,
     modifier: Modifier = Modifier
@@ -134,7 +142,7 @@ private fun CoachPanel(
     LightPanel(modifier = modifier.fillMaxWidth()) {
         Column {
             Text("Coach reply", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
-            Text(turnResult?.reply ?: "Welcome! What would you like to order today?")
+            Text(turnResult?.reply ?: opening)
             Spacer(Modifier.height(18.dp))
             ScoreRow("Grammar", turnResult?.scores?.grammar?.score)
             ScoreRow("Fluency", turnResult?.scores?.fluency?.score)
