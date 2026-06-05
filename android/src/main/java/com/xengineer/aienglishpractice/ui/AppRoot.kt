@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.xengineer.aienglishpractice.core.AppNavigator
 import com.xengineer.aienglishpractice.core.AppRoute
+import com.xengineer.aienglishpractice.core.CoachEndpointConfig
 import com.xengineer.aienglishpractice.core.HomeDashboard
 import com.xengineer.aienglishpractice.core.LocalPracticeHistory
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
@@ -15,13 +16,14 @@ import com.xengineer.aienglishpractice.ui.home.HomeScreen
 import com.xengineer.aienglishpractice.ui.practice.PracticeScreen
 import com.xengineer.aienglishpractice.ui.scenario.ScenarioDetailScreen
 import com.xengineer.aienglishpractice.ui.scenario.ScenarioListScreen
-import com.xengineer.aienglishpractice.ui.shared.PlaceholderScreen
+import com.xengineer.aienglishpractice.ui.settings.CoachSettingsScreen
 
 @Composable
 fun AppRoot() {
     val navigator = remember { AppNavigator() }
     var route by remember { mutableStateOf(navigator.currentRoute) }
     var historyRevision by remember { mutableStateOf(0) }
+    var endpointConfig by remember { mutableStateOf(CoachEndpointConfig.default()) }
     val historyStore = LocalPracticeHistory.store
 
     fun navigate(action: AppNavigator.() -> Unit) {
@@ -43,6 +45,7 @@ fun AppRoot() {
 
         is AppRoute.Practice -> PracticeScreen(
             scenarioId = current.scenarioId,
+            coachBaseUrl = endpointConfig.baseUrl,
             onBackHome = { navigate { goHome() } },
             onSessionFinished = { entry ->
                 historyStore.record(entry)
@@ -75,11 +78,10 @@ fun AppRoot() {
             )
         }
 
-        AppRoute.Settings -> PlaceholderScreen(
-            title = "设置",
-            body = "语音、云端教练和显示选项后续会集中在这里。",
-            action = "返回首页",
-            onAction = { navigate { goHome() } }
+        AppRoute.Settings -> CoachSettingsScreen(
+            endpointConfig = endpointConfig,
+            onEndpointConfigChange = { endpointConfig = it },
+            onBackHome = { navigate { goHome() } }
         )
     }
 }

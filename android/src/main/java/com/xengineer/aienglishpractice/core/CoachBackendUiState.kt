@@ -96,7 +96,7 @@ data class CoachBackendUiState(
     }
 
     companion object {
-        const val DEFAULT_BASE_URL = "http://10.0.2.2:8000"
+        const val DEFAULT_BASE_URL = CoachEndpointConfig.USB_DEVICE_BASE_URL
 
         fun initial(baseUrl: String = DEFAULT_BASE_URL): CoachBackendUiState = CoachBackendUiState(
             mode = CoachBackendMode.Auto,

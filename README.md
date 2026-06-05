@@ -62,6 +62,17 @@ Android Debug 包：
 ANDROID_HOME=$HOME/Library/Android/sdk ./gradlew :android:assembleDebug
 ```
 
+真机云端教练联调：
+
+```bash
+cd backend
+. .venv/bin/activate
+PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+adb reverse tcp:8000 tcp:8000
+```
+
+Android 端默认使用 `USB 真机` 地址 `http://127.0.0.1:8000`。模拟器可在设置页切换到 `http://10.0.2.2:8000`，局域网或隧道可使用自定义地址。
+
 ## 仓库结构
 
 ```text
@@ -105,9 +116,7 @@ ANDROID_HOME=$HOME/Library/Android/sdk ./gradlew :android:assembleDebug
 
 增强功能如文生图、PaddleSpeech 备用识别、LLM 个性化总结将作为可选能力接入，不影响主流程演示。
 
-当前 Android Demo 已提供文本 fallback 闭环：点击 `Demo Turn` 模拟一轮点餐输入，页面展示纠错、评分、AI 回复；点击 `Finish` 生成课后总结。语音识别和 TTS 会在后续迭代接入同一状态链路。
-
-Android 入口已补齐首页导航：App 启动进入学习主页，可从首页进入推荐点餐练习、场景入口、历史入口和设置入口。当前场景、历史、设置页保留同风格占位，后续迭代逐步接入真实内容。
+当前 Android Demo 已提供完整 P0 闭环：选择场景、进入横屏练习页、语音或演示输入、云端教练优先分析、本地 fallback、TTS 朗读、评分纠错和课后总结。设置页可切换 USB 真机、模拟器或自定义 FastAPI 地址。
 
 ## Demo 视频
 

@@ -59,6 +59,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PracticeScreen(
     scenarioId: String,
+    coachBaseUrl: String = CoachBackendUiState.DEFAULT_BASE_URL,
     onBackHome: () -> Unit,
     onSessionFinished: (PracticeHistoryEntry) -> Unit = {}
 ) {
@@ -69,7 +70,9 @@ fun PracticeScreen(
     }
     var session by remember(scenarioId) { mutableStateOf(newPracticeSession(scenario)) }
     var uiState by remember(scenarioId) { mutableStateOf(PracticeUiState.initial(scenario)) }
-    var backendState by remember(scenarioId) { mutableStateOf(CoachBackendUiState.initial()) }
+    var backendState by remember(scenarioId, coachBaseUrl) {
+        mutableStateOf(CoachBackendUiState.initial(coachBaseUrl))
+    }
     val coachApiClient = remember(backendState.baseUrl) { CoachApiClient(backendState.baseUrl) }
     val demoTranscript = remember(scenarioId) { demoTranscriptFor(scenario.id) }
     val speechRecognizer = remember(context) {
