@@ -40,12 +40,17 @@
 - 场景数据：JSON 场景脚本、缓存背景图、Demo fallback 数据
 - 部署方式：开发演示优先使用 Android 真机 + 本机 FastAPI + Cloudflare Tunnel
 
+后端 Python 依赖见 [backend/requirements.txt](backend/requirements.txt)。Android 依赖将在客户端工程初始化后补充。
+
 ## 仓库结构
 
 ```text
 .
 ├── android/                 # Android 客户端占位与实现说明
 ├── backend/                 # FastAPI 后端占位与实现说明
+│   ├── app/                 # 后端 API 与规则服务
+│   ├── tests/               # 后端自动化测试
+│   └── requirements.txt     # 后端 Python 依赖
 ├── docs/
 │   ├── requirements.md      # 需求分析
 │   ├── architecture.md      # 概要设计与系统架构

@@ -238,7 +238,8 @@ Demo 阶段以脚本和 fallback 为主，保证稳定演示。
 ```json
 {
   "text": "I want order a coffee",
-  "language": "en-US"
+  "language": "en-US",
+  "scenarioId": "restaurant"
 }
 ```
 
@@ -246,15 +247,16 @@ Demo 阶段以脚本和 fallback 为主，保证稳定演示。
 
 ```json
 {
-  "source": "LANGUAGETOOL",
-  "matches": [
+  "original": "I want order a coffee",
+  "betterExpression": "I'd like to order a coffee, please.",
+  "issues": [
     {
-      "message": "Possible missing word.",
-      "offset": 7,
-      "length": 5,
-      "replacements": ["to order"]
+      "type": "grammar",
+      "message": "Use 'to order' or a polite ordering expression.",
+      "suggestion": "I'd like to order"
     }
-  ]
+  ],
+  "source": "RULE_ONLY"
 }
 ```
 
@@ -265,8 +267,11 @@ Demo 阶段以脚本和 fallback 为主，保证稳定演示。
 ```json
 {
   "scenarioId": "restaurant",
-  "turnText": "I'd like to order a coffee.",
-  "history": []
+  "turnText": "I want order a coffee",
+  "history": [],
+  "durationMs": 6000,
+  "asrConfidence": 0.8,
+  "turnIndex": 0
 }
 ```
 
@@ -276,7 +281,26 @@ Demo 阶段以脚本和 fallback 为主，保证稳定演示。
 {
   "reply": "Sure. Would you like anything to drink with that?",
   "betterExpression": "I'd like to order a coffee, please.",
-  "tips": ["Use 'please' to sound more polite."]
+  "tips": ["Use 'please' to sound more polite."],
+  "scores": {
+    "grammar": {
+      "score": 84,
+      "reason": "Found 2 grammar or spelling issues."
+    },
+    "fluency": {
+      "score": 100,
+      "reason": "Speaking speed is 100 words per minute."
+    },
+    "pronunciation": {
+      "score": 80,
+      "reason": "ASR confidence is 0.80."
+    },
+    "completion": {
+      "score": 33,
+      "reason": "Matched 1 of 3 scene goals."
+    }
+  },
+  "source": "RULE_ONLY"
 }
 ```
 
