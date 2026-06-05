@@ -107,6 +107,8 @@ ANDROID_HOME=$HOME/Library/Android/sdk ./gradlew :android:assembleDebug
 
 当前 Android Demo 已提供文本 fallback 闭环：点击 `Demo Turn` 模拟一轮点餐输入，页面展示纠错、评分、AI 回复；点击 `Finish` 生成课后总结。语音识别和 TTS 会在后续迭代接入同一状态链路。
 
+Android 入口已补齐首页导航：App 启动进入学习主页，可从首页进入推荐点餐练习、场景入口、历史入口和设置入口。当前场景、历史、设置页保留同风格占位，后续迭代逐步接入真实内容。
+
 ## Demo 视频
 
 待补充：提交前将在此处放置可访问的视频链接。
