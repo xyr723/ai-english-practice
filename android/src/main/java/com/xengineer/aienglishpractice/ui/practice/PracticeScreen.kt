@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.xengineer.aienglishpractice.core.CoachBackendUiState
+import com.xengineer.aienglishpractice.core.CoachFeedbackSource
 import com.xengineer.aienglishpractice.core.PracticeState
 import com.xengineer.aienglishpractice.core.PracticeStep
 import com.xengineer.aienglishpractice.core.PracticeUiState
@@ -40,6 +43,8 @@ import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.core.ScoreEngine
 import com.xengineer.aienglishpractice.core.VoiceInputMode
 import com.xengineer.aienglishpractice.core.VoiceUiState
+import com.xengineer.aienglishpractice.network.CoachAnalyzePayload
+import com.xengineer.aienglishpractice.network.CoachApiClient
 import com.xengineer.aienglishpractice.ui.shared.DarkPanel
 import com.xengineer.aienglishpractice.ui.shared.LightPanel
 import com.xengineer.aienglishpractice.ui.shared.PrimaryAction
@@ -48,6 +53,7 @@ import com.xengineer.aienglishpractice.ui.theme.PracticeColors
 import com.xengineer.aienglishpractice.voice.SpeechRecognitionCallbacks
 import com.xengineer.aienglishpractice.voice.SpeechRecognizerAdapter
 import com.xengineer.aienglishpractice.voice.TextToSpeechAdapter
+import kotlinx.coroutines.launch
 
 @Composable
 fun PracticeScreen(
@@ -56,11 +62,14 @@ fun PracticeScreen(
     onSessionFinished: (PracticeHistoryEntry) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val scenario = remember(scenarioId) {
         ScenarioCatalog.findById(scenarioId) ?: ScenarioCatalog.recommended()
     }
     var session by remember(scenarioId) { mutableStateOf(newPracticeSession(scenario)) }
     var uiState by remember(scenarioId) { mutableStateOf(PracticeUiState.initial(scenario)) }
+    var backendState by remember(scenarioId) { mutableStateOf(CoachBackendUiState.initial()) }
+    val coachApiClient = remember(backendState.baseUrl) { CoachApiClient(backendState.baseUrl) }
     val demoTranscript = remember(scenarioId) { demoTranscriptFor(scenario.id) }
     val speechRecognizer = remember(context) {
         SpeechRecognizerAdapter(context.applicationContext)
@@ -115,10 +124,10 @@ fun PracticeScreen(
         session = newPracticeSession(scenario)
         uiState = PracticeUiState.initial(scenario)
         voiceState = voiceState.useDemoMode()
+        backendState = backendState.useAuto()
     }
 
-    fun showFeedback() {
-        val transcript = uiState.transcript.ifBlank { demoTranscript }
+    fun submitLocalFeedback(transcript: String) {
         val result = session.submitTurn(
             text = transcript,
             durationMs = demoDurationFor(scenario.id),
@@ -130,6 +139,56 @@ fun PracticeScreen(
         )
         if (voiceState.ttsEnabled) {
             textToSpeech.speak(result.reply)
+        }
+    }
+
+    fun showFeedback() {
+        val transcript = uiState.transcript.ifBlank { demoTranscript }
+        val durationMs = demoDurationFor(scenario.id)
+        val asrConfidence = demoConfidenceFor(scenario.id)
+
+        if (!backendState.shouldTryBackend) {
+            backendState = backendState.useLocalOnly()
+            submitLocalFeedback(transcript)
+            return
+        }
+
+        val activeBackendState = backendState.withChecking()
+        backendState = activeBackendState
+        coroutineScope.launch {
+            try {
+                val backendResult = coachApiClient.analyze(
+                    CoachAnalyzePayload(
+                        scenarioId = scenario.id,
+                        turnText = transcript,
+                        durationMs = durationMs,
+                        asrConfidence = asrConfidence,
+                        turnIndex = session.turnCount
+                    )
+                )
+                session.recordAnalyzedTurn(backendResult)
+                backendState = activeBackendState.withBackendSuccess()
+                uiState = PracticeUiState.speaking(
+                    scenario = scenario,
+                    turnResult = backendResult
+                )
+                if (voiceState.ttsEnabled) {
+                    textToSpeech.speak(backendResult.reply)
+                }
+            } catch (error: Exception) {
+                val failedState = activeBackendState.withBackendFailure(
+                    error.message ?: "Backend request failed"
+                )
+                backendState = failedState
+                if (failedState.shouldUseLocalFallback) {
+                    submitLocalFeedback(transcript)
+                } else {
+                    uiState = PracticeUiState.error(
+                        scenario = scenario,
+                        message = failedState.statusText
+                    )
+                }
+            }
         }
     }
 
@@ -227,6 +286,10 @@ fun PracticeScreen(
         textToSpeech.speak(replyText(scenario.opening, uiState))
     }
 
+    fun toggleBackendMode() {
+        backendState = backendState.nextMode()
+    }
+
     StageScaffold {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -246,6 +309,7 @@ fun PracticeScreen(
                 StatusPanel(
                     uiState = uiState,
                     voiceState = voiceState,
+                    backendState = backendState,
                     modifier = Modifier.weight(0.8f)
                 )
                 FeedbackPanel(uiState = uiState, modifier = Modifier.weight(1f))
@@ -260,10 +324,12 @@ fun PracticeScreen(
             PracticeControls(
                 uiState = uiState,
                 voiceState = voiceState,
+                backendState = backendState,
                 onPrimaryAction = { advancePrimary() },
                 onStartSpeech = { startSpeechInput() },
                 onToggleVoiceMode = { toggleVoiceMode() },
                 onToggleTts = { voiceState = voiceState.setTtsEnabled(!voiceState.ttsEnabled) },
+                onToggleBackend = { toggleBackendMode() },
                 onFinish = {
                     val summary = session.finish()
                     val entry = PracticeHistoryEntry.fromSummary(
@@ -317,6 +383,7 @@ private fun PracticeHeader(
 private fun StatusPanel(
     uiState: PracticeUiState,
     voiceState: VoiceUiState,
+    backendState: CoachBackendUiState,
     modifier: Modifier = Modifier
 ) {
     DarkPanel(modifier = modifier.fillMaxWidth()) {
@@ -334,6 +401,7 @@ private fun StatusPanel(
                 "TTS: ${if (voiceState.ttsReady) "ready" else "initializing"} · ${if (voiceState.ttsEnabled) "enabled" else "muted"}",
                 color = Color(0xFFEAD7C4)
             )
+            Text("Coach: ${backendState.statusText}", color = Color(0xFFEAD7C4))
             Spacer(Modifier.height(4.dp))
             uiState.timeline.forEach { step ->
                 TimelineRow(step)
@@ -408,6 +476,10 @@ private fun CoachPanel(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Coach reply", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
             Text(replyText(opening, uiState))
+            Text(
+                text = "Source: ${turnResult?.source?.label() ?: "Waiting"}",
+                color = PracticeColors.Ink
+            )
             ScoreRow("Grammar", turnResult?.scores?.grammar?.score)
             ScoreRow("Fluency", turnResult?.scores?.fluency?.score)
             ScoreRow("Pronunciation", turnResult?.scores?.pronunciation?.score)
@@ -439,10 +511,12 @@ private fun ScoreRow(label: String, score: Int?) {
 private fun PracticeControls(
     uiState: PracticeUiState,
     voiceState: VoiceUiState,
+    backendState: CoachBackendUiState,
     onPrimaryAction: () -> Unit,
     onStartSpeech: () -> Unit,
     onToggleVoiceMode: () -> Unit,
     onToggleTts: () -> Unit,
+    onToggleBackend: () -> Unit,
     onFinish: () -> Unit,
     onSimulateError: () -> Unit
 ) {
@@ -453,7 +527,7 @@ private fun PracticeControls(
             verticalAlignment = Alignment.CenterVertically
         ) {
             PrimaryAction(
-                text = uiState.primaryAction,
+                text = if (backendState.isChecking) "Checking..." else uiState.primaryAction,
                 onClick = onPrimaryAction,
                 modifier = Modifier.widthIn(min = 156.dp)
             )
@@ -478,6 +552,9 @@ private fun PracticeControls(
             }
             TextButton(onClick = onToggleTts) {
                 Text(voiceState.ttsAction, color = Color.White)
+            }
+            TextButton(onClick = onToggleBackend) {
+                Text(backendState.modeAction, color = Color.White)
             }
             if (uiState.phase != PracticeState.Finished) {
                 TextButton(onClick = onSimulateError) {
@@ -525,3 +602,9 @@ private fun demoConfidenceFor(scenarioId: String): Float = when (scenarioId) {
 
 private fun android.content.Context.hasRecordAudioPermission(): Boolean =
     checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
+private fun CoachFeedbackSource.label(): String = when (this) {
+    CoachFeedbackSource.BackendApi -> "Backend API"
+    CoachFeedbackSource.LocalFallback -> "Local fallback"
+    CoachFeedbackSource.BackendError -> "Backend error"
+}
