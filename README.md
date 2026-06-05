@@ -40,7 +40,27 @@
 - 场景数据：JSON 场景脚本、缓存背景图、Demo fallback 数据
 - 部署方式：开发演示优先使用 Android 真机 + 本机 FastAPI + Cloudflare Tunnel
 
-后端 Python 依赖见 [backend/requirements.txt](backend/requirements.txt)。Android 依赖将在客户端工程初始化后补充。
+后端 Python 依赖见 [backend/requirements.txt](backend/requirements.txt)，Android 依赖见 [android/build.gradle.kts](android/build.gradle.kts)。
+
+## 本地验证
+
+后端测试：
+
+```bash
+PYTHONPATH=backend backend/.venv/bin/python -m pytest backend/tests -q
+```
+
+Android 单元测试：
+
+```bash
+ANDROID_HOME=$HOME/Library/Android/sdk ./gradlew :android:testDebugUnitTest
+```
+
+Android Debug 包：
+
+```bash
+ANDROID_HOME=$HOME/Library/Android/sdk ./gradlew :android:assembleDebug
+```
 
 ## 仓库结构
 
@@ -84,6 +104,8 @@
 7. 练习结束后生成课后总结。
 
 增强功能如文生图、PaddleSpeech 备用识别、LLM 个性化总结将作为可选能力接入，不影响主流程演示。
+
+当前 Android Demo 已提供文本 fallback 闭环：点击 `Demo Turn` 模拟一轮点餐输入，页面展示纠错、评分、AI 回复；点击 `Finish` 生成课后总结。语音识别和 TTS 会在后续迭代接入同一状态链路。
 
 ## Demo 视频
 
