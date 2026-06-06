@@ -56,23 +56,82 @@ class PracticeSession(
     fun finish(): PracticeSummary {
         state = PracticeState.Finished
         val averages = turns.map { turn ->
-            listOf(
-                turn.scores.grammar.score,
-                turn.scores.fluency.score,
-                turn.scores.pronunciation.score,
-                turn.scores.completion.score
-            ).average().toInt()
+            turn.averageScore()
         }
         val averageScore = if (averages.isEmpty()) 0 else averages.average().toInt()
+        val scoreBreakdown = summaryScoreBreakdown()
+        val turnReviews = turns.mapIndexed { index, turn ->
+            SummaryTurnReview(
+                index = index + 1,
+                userText = turn.userText,
+                betterExpression = turn.betterExpression,
+                reply = turn.reply,
+                score = turn.averageScore(),
+                tips = turn.tips
+            )
+        }
 
         return PracticeSummary(
             turnCount = turns.size,
             averageScore = averageScore,
-            strengths = if (turns.isEmpty()) emptyList() else listOf("你完成了本次场景练习。"),
-            improvements = listOf("复习优化表达，并重复练习同一场景。"),
-            nextGoal = "下次重点练习确认价格和外带选项。"
+            strengths = strengths(scoreBreakdown),
+            improvements = improvements(scoreBreakdown),
+            nextGoal = nextGoal(),
+            scoreBreakdown = scoreBreakdown,
+            turnReviews = turnReviews,
+            practicePlan = practicePlan()
         )
     }
+
+    private fun summaryScoreBreakdown(): List<SummaryScoreBreakdown> {
+        if (turns.isEmpty()) {
+            return listOf(
+                SummaryScoreBreakdown("语法", 0, "还没有完成练习轮次。"),
+                SummaryScoreBreakdown("流利度", 0, "还没有完成练习轮次。"),
+                SummaryScoreBreakdown("发音", 0, "还没有完成练习轮次。"),
+                SummaryScoreBreakdown("完成度", 0, "还没有完成练习轮次。")
+            )
+        }
+
+        return listOf(
+            SummaryScoreBreakdown("语法", turns.averageOf { it.scores.grammar.score }, "表达准确度和纠错数量。"),
+            SummaryScoreBreakdown("流利度", turns.averageOf { it.scores.fluency.score }, "回答速度和连续表达稳定性。"),
+            SummaryScoreBreakdown("发音", turns.averageOf { it.scores.pronunciation.score }, "语音识别置信度代表的清晰度。"),
+            SummaryScoreBreakdown("完成度", turns.averageOf { it.scores.completion.score }, "场景目标命中情况。")
+        )
+    }
+
+    private fun strengths(scoreBreakdown: List<SummaryScoreBreakdown>): List<String> {
+        if (turns.isEmpty()) return emptyList()
+        val best = scoreBreakdown.maxByOrNull { it.score }
+        return listOf(
+            "你完成了 ${turns.size} 轮 ${scenario.name} 练习。",
+            "本次表现最稳定的是${best?.label ?: "完成度"}，平均 ${best?.score ?: 0} 分。"
+        )
+    }
+
+    private fun improvements(scoreBreakdown: List<SummaryScoreBreakdown>): List<String> {
+        val weakest = scoreBreakdown.minByOrNull { it.score }
+        val correctionTip = turns.firstOrNull { it.tips.isNotEmpty() }?.tips?.firstOrNull()
+            ?: "复习优化表达，并重复练习同一场景。"
+        return listOf(
+            "优先提升${weakest?.label ?: "表达稳定性"}，当前平均 ${weakest?.score ?: 0} 分。",
+            correctionTip
+        )
+    }
+
+    private fun nextGoal(): String = when (scenario.id) {
+        "restaurant" -> "下次重点练习确认价格、饮品和外带选项。"
+        "interview" -> "下次用 STAR 结构补充一个项目案例。"
+        "meeting" -> "下次练习先表达观点，再确认风险和下一步。"
+        else -> "下次选择同一场景，完成更完整的三轮对话。"
+    }
+
+    private fun practicePlan(): List<String> = listOf(
+        "先朗读本次 better expression 3 遍。",
+        "用同一场景再完成至少 2 轮回答。",
+        "下一轮刻意使用 1 个礼貌表达和 1 个追问句。"
+    )
 
     private fun nextReply(): String {
         val index = turns.size
@@ -132,3 +191,13 @@ class PracticeSession(
         return markers.any { marker -> marker in loweredText }
     }
 }
+
+private fun TurnResult.averageScore(): Int = listOf(
+    scores.grammar.score,
+    scores.fluency.score,
+    scores.pronunciation.score,
+    scores.completion.score
+).average().toInt()
+
+private inline fun List<TurnResult>.averageOf(score: (TurnResult) -> Int): Int =
+    map(score).average().toInt()
