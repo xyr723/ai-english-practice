@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import com.xengineer.aienglishpractice.core.AppNavigator
 import com.xengineer.aienglishpractice.core.AppRoute
 import com.xengineer.aienglishpractice.core.CoachEndpointConfig
+import com.xengineer.aienglishpractice.core.EngineSelectionConfig
 import com.xengineer.aienglishpractice.core.HomeDashboard
 import com.xengineer.aienglishpractice.core.LocalPracticeHistory
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
@@ -24,6 +25,7 @@ fun AppRoot() {
     var route by remember { mutableStateOf(navigator.currentRoute) }
     var historyRevision by remember { mutableStateOf(0) }
     var endpointConfig by remember { mutableStateOf(CoachEndpointConfig.default()) }
+    var engineSelectionConfig by remember { mutableStateOf(EngineSelectionConfig.default()) }
     val historyStore = LocalPracticeHistory.store
 
     fun navigate(action: AppNavigator.() -> Unit) {
@@ -81,6 +83,8 @@ fun AppRoot() {
         AppRoute.Settings -> CoachSettingsScreen(
             endpointConfig = endpointConfig,
             onEndpointConfigChange = { endpointConfig = it },
+            engineSelectionConfig = engineSelectionConfig,
+            onEngineSelectionChange = { engineSelectionConfig = it },
             onBackHome = { navigate { goHome() } }
         )
     }

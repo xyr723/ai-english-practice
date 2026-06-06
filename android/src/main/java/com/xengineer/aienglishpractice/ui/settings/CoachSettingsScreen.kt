@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.xengineer.aienglishpractice.core.CoachEndpointConfig
 import com.xengineer.aienglishpractice.core.CoachEndpointMode
+import com.xengineer.aienglishpractice.core.EngineProfileMode
+import com.xengineer.aienglishpractice.core.EngineSelectionConfig
 import com.xengineer.aienglishpractice.ui.shared.DarkPanel
 import com.xengineer.aienglishpractice.ui.shared.LightPanel
 import com.xengineer.aienglishpractice.ui.shared.PrimaryAction
@@ -34,6 +36,8 @@ import com.xengineer.aienglishpractice.ui.theme.PracticeColors
 fun CoachSettingsScreen(
     endpointConfig: CoachEndpointConfig,
     onEndpointConfigChange: (CoachEndpointConfig) -> Unit,
+    engineSelectionConfig: EngineSelectionConfig,
+    onEngineSelectionChange: (EngineSelectionConfig) -> Unit,
     onBackHome: () -> Unit
 ) {
     var customInput by remember(endpointConfig.customBaseUrl) {
@@ -64,6 +68,18 @@ fun CoachSettingsScreen(
                         )
                         Text(endpointConfig.baseUrl, color = Color(0xFFEAD7C4))
                         Text(endpointConfig.setupHint, color = Color(0xFFEAD7C4))
+                        Spacer(Modifier.height(6.dp))
+                        Text("引擎策略", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = engineSelectionConfig.profile.title,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(engineSelectionConfig.profile.description, color = Color(0xFFEAD7C4))
+                        engineSelectionConfig.engineSummaries.forEach { summary ->
+                            Text(summary, color = Color(0xFFEAD7C4))
+                        }
                     }
                 }
                 LightPanel(modifier = Modifier.weight(1f)) {
@@ -89,6 +105,23 @@ fun CoachSettingsScreen(
                         PrimaryAction(
                             text = "使用自定义地址",
                             onClick = { onEndpointConfigChange(endpointConfig.useCustom(customInput)) }
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text("引擎模式", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
+                        EngineProfileAction(
+                            text = EngineProfileMode.StableDemo.title,
+                            selected = engineSelectionConfig.profile == EngineProfileMode.StableDemo,
+                            onClick = { onEngineSelectionChange(engineSelectionConfig.useStableDemo()) }
+                        )
+                        EngineProfileAction(
+                            text = EngineProfileMode.AccuracyFirst.title,
+                            selected = engineSelectionConfig.profile == EngineProfileMode.AccuracyFirst,
+                            onClick = { onEngineSelectionChange(engineSelectionConfig.useAccuracyFirst()) }
+                        )
+                        EngineProfileAction(
+                            text = EngineProfileMode.OfflineFirst.title,
+                            selected = engineSelectionConfig.profile == EngineProfileMode.OfflineFirst,
+                            onClick = { onEngineSelectionChange(engineSelectionConfig.useOfflineFirst()) }
                         )
                     }
                 }
@@ -137,4 +170,19 @@ private fun EndpointAction(
         }
     }
     Spacer(Modifier.height(2.dp))
+}
+
+@Composable
+private fun EngineProfileAction(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    if (selected) {
+        PrimaryAction(text = "$text · 当前", onClick = onClick)
+    } else {
+        TextButton(onClick = onClick) {
+            Text(text, color = PracticeColors.Ink)
+        }
+    }
 }

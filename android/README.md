@@ -83,12 +83,13 @@ adb reverse tcp:8000 tcp:8000
 - `ui.scenario.ScenarioDetailScreen`：场景详情页，展示训练目标、关键词和对话节奏。
 - `ui.practice.PracticeScreen`：横屏练习页，负责完整状态展示、文本 fallback、反馈和总结闭环。
 - `ui.history.HistoryScreen`：本地历史页，展示完成记录、累计 turn、平均分和重复练习入口。
-- `ui.settings.CoachSettingsScreen`：云端教练地址设置页，支持 USB 真机、模拟器和自定义地址。
+- `ui.settings.CoachSettingsScreen`：设置页，支持云端教练地址配置和多引擎策略预留入口。
 - `ui.theme.PracticeTheme`：颜色和 Material 主题。
 - `core.ScenarioCatalog`：本地场景目录，提供推荐场景、列表和按 id 查询。
 - `core.PracticeUiState`：练习页状态模型，统一维护状态文案、主操作、时间线、结束和错误恢复标记。
 - `core.VoiceUiState`：语音输入/TTS 状态模型，维护 speech/demo 模式、权限、识别文本、错误和 TTS 开关。
 - `core.CoachEndpointConfig`：云端教练地址配置，维护 USB 真机、模拟器和自定义地址。
+- `core.EngineSelectionConfig`：ASR、TTS 和判定引擎策略预留接口，维护稳定演示、效果优先和离线优先模式。
 - `core.CoachBackendUiState`：云端/fallback 状态模型，维护 Auto、云端、本地和反馈来源。
 - `core.PracticeHistoryStore`：进程内本地历史仓库，负责记录完成摘要、最近记录、累计 turn 和清空记录。
 - `core.AppNavigator`：轻量路由状态，当前覆盖 Home、Scenarios、ScenarioDetail、Practice、History、Settings。
