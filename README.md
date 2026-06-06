@@ -33,6 +33,10 @@
 - 视觉陪练：横屏场景舞台、背景图、2D 角色状态动画。
 - 降级可用：后端、网络或增强模型不可用时使用本地 fallback 数据。
 
+## 产品展望亮点
+
+- 多引擎切换：预留 ASR、TTS 和判定引擎策略接口，当前默认使用 Android SpeechRecognizer、Android TextToSpeech、本地规则 + LanguageTool；后续可按用户场景切换到云端 ASR、神经 TTS、LLM/LanguageTool 混合判定，兼顾稳定演示、离线可用和效果优先。
+
 ## 技术方案
 
 - Android 客户端：Kotlin、Jetpack Compose、SpeechRecognizer、TextToSpeech、Rive/Lottie
