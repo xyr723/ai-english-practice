@@ -58,6 +58,40 @@ class PracticeHistoryStoreTest {
     }
 
     @Test
+    fun recordPersistsHistoryAcrossStoreInstances() {
+        val storage = FakePracticeHistoryStorage()
+        val entry = historyEntry(id = "entry-persisted", scenario = PracticeScenario.restaurant())
+
+        PracticeHistoryStore(storage).record(entry)
+        val restoredStore = PracticeHistoryStore(storage)
+
+        assertEquals(listOf(entry), restoredStore.recent())
+        assertTrue(storage.savedValue?.contains("entry-persisted") == true)
+    }
+
+    @Test
+    fun clearRemovesPersistedHistory() {
+        val storage = FakePracticeHistoryStorage()
+        PracticeHistoryStore(storage).record(historyEntry(id = "entry-1", scenario = PracticeScenario.restaurant()))
+
+        PracticeHistoryStore(storage).clear()
+        val restoredStore = PracticeHistoryStore(storage)
+
+        assertTrue(restoredStore.recent().isEmpty())
+        assertEquals(null, storage.savedValue)
+    }
+
+    @Test
+    fun invalidPersistedHistoryFallsBackToEmptyHistory() {
+        val storage = FakePracticeHistoryStorage(initialValue = "\\u")
+
+        val store = PracticeHistoryStore(storage)
+
+        assertTrue(store.recent().isEmpty())
+        assertEquals(null, store.latest())
+    }
+
+    @Test
     fun homeDashboardUsesLatestLocalHistory() {
         val store = PracticeHistoryStore()
         store.record(historyEntry(id = "entry-1", scenario = PracticeScenario.restaurant(), turnCount = 1))
@@ -93,4 +127,19 @@ class PracticeHistoryStoreTest {
         improvements = listOf("复习优化表达。"),
         nextGoal = nextGoal
     )
+
+    private class FakePracticeHistoryStorage(initialValue: String? = null) : PracticeHistoryStorage {
+        var savedValue: String? = initialValue
+            private set
+
+        override fun read(): String? = savedValue
+
+        override fun write(value: String) {
+            savedValue = value
+        }
+
+        override fun clear() {
+            savedValue = null
+        }
+    }
 }

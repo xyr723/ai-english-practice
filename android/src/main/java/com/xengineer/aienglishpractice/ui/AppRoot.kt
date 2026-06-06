@@ -5,12 +5,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import com.xengineer.aienglishpractice.core.AppNavigator
 import com.xengineer.aienglishpractice.core.AppRoute
 import com.xengineer.aienglishpractice.core.CoachEndpointConfig
 import com.xengineer.aienglishpractice.core.HomeDashboard
-import com.xengineer.aienglishpractice.core.LocalPracticeHistory
+import com.xengineer.aienglishpractice.core.PracticeHistoryStore
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
+import com.xengineer.aienglishpractice.core.SharedPreferencesPracticeHistoryStorage
 import com.xengineer.aienglishpractice.ui.history.HistoryScreen
 import com.xengineer.aienglishpractice.ui.home.HomeScreen
 import com.xengineer.aienglishpractice.ui.practice.PracticeScreen
@@ -24,7 +26,10 @@ fun AppRoot() {
     var route by remember { mutableStateOf(navigator.currentRoute) }
     var historyRevision by remember { mutableStateOf(0) }
     var endpointConfig by remember { mutableStateOf(CoachEndpointConfig.default()) }
-    val historyStore = LocalPracticeHistory.store
+    val context = LocalContext.current
+    val historyStore = remember(context) {
+        PracticeHistoryStore(SharedPreferencesPracticeHistoryStorage(context.applicationContext))
+    }
 
     fun navigate(action: AppNavigator.() -> Unit) {
         navigator.action()
