@@ -14,7 +14,8 @@ data class VoiceUiState(
     val finalTranscript: String = "",
     val errorMessage: String? = null,
     val ttsEnabled: Boolean = true,
-    val ttsReady: Boolean = false
+    val ttsReady: Boolean = false,
+    val isTtsSpeaking: Boolean = false
 ) {
     val canStartSpeech: Boolean
         get() = mode == VoiceInputMode.SpeechRecognizer &&
@@ -48,6 +49,7 @@ data class VoiceUiState(
     fun useDemoMode(): VoiceUiState = copy(
         mode = VoiceInputMode.DemoFallback,
         isListening = false,
+        isTtsSpeaking = false,
         errorMessage = null
     )
 
@@ -107,12 +109,21 @@ data class VoiceUiState(
     fun withRecognitionError(message: String): VoiceUiState = copy(
         mode = VoiceInputMode.DemoFallback,
         isListening = false,
+        isTtsSpeaking = false,
         errorMessage = message
     )
 
-    fun setTtsEnabled(enabled: Boolean): VoiceUiState = copy(ttsEnabled = enabled)
+    fun setTtsEnabled(enabled: Boolean): VoiceUiState = copy(
+        ttsEnabled = enabled,
+        isTtsSpeaking = if (enabled) isTtsSpeaking else false
+    )
 
-    fun setTtsReady(ready: Boolean): VoiceUiState = copy(ttsReady = ready)
+    fun setTtsReady(ready: Boolean): VoiceUiState = copy(
+        ttsReady = ready,
+        isTtsSpeaking = if (ready) isTtsSpeaking else false
+    )
+
+    fun setTtsSpeaking(speaking: Boolean): VoiceUiState = copy(isTtsSpeaking = speaking)
 
     companion object {
         fun initial(

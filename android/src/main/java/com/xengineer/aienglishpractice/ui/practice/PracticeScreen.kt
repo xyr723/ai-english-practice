@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.xengineer.aienglishpractice.core.CoachBackendUiState
+import com.xengineer.aienglishpractice.core.CoachCharacterState
 import com.xengineer.aienglishpractice.core.CoachFeedbackSource
 import com.xengineer.aienglishpractice.core.PracticeState
 import com.xengineer.aienglishpractice.core.PracticeStep
@@ -91,9 +92,17 @@ fun PracticeScreen(
     }
     var ttsReady by remember { mutableStateOf(false) }
     val textToSpeech = remember(context) {
-        TextToSpeechAdapter(context.applicationContext) { ready ->
-            ttsReady = ready
-        }
+        TextToSpeechAdapter(
+            context = context.applicationContext,
+            onReadyChanged = { ready ->
+                ttsReady = ready
+            },
+            onPlaybackChanged = { speaking ->
+                coroutineScope.launch {
+                    voiceState = voiceState.setTtsSpeaking(speaking)
+                }
+            }
+        )
     }
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -315,6 +324,10 @@ fun PracticeScreen(
                 FeedbackPanel(uiState = uiState, modifier = Modifier.weight(1f))
                 CoachPanel(
                     opening = scenario.opening,
+                    characterState = CoachCharacterState.from(
+                        practiceState = uiState.phase,
+                        isTtsSpeaking = voiceState.isTtsSpeaking
+                    ),
                     uiState = uiState,
                     voiceState = voiceState,
                     onSpeakCoach = { speakCoachText() },
@@ -470,6 +483,7 @@ private fun FeedbackPanel(uiState: PracticeUiState, modifier: Modifier = Modifie
 @Composable
 private fun CoachPanel(
     opening: String,
+    characterState: CoachCharacterState,
     uiState: PracticeUiState,
     voiceState: VoiceUiState,
     onSpeakCoach: () -> Unit,
@@ -480,6 +494,7 @@ private fun CoachPanel(
 
     LightPanel(modifier = modifier.fillMaxWidth().fillMaxHeight()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            CoachCharacterPanel(state = characterState)
             Text("教练回复", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
             Text(replyText(opening, uiState))
             Text(
