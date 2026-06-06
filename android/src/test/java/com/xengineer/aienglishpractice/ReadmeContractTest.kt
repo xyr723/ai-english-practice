@@ -13,5 +13,7 @@ class ReadmeContractTest {
         assertTrue(readme.contains("ASR"))
         assertTrue(readme.contains("TTS"))
         assertTrue(readme.contains("LanguageTool"))
+        assertTrue(readme.contains("Cloudflare Tunnel"))
+        assertTrue(readme.contains("持久化"))
     }
 }
