@@ -54,6 +54,7 @@ android/build/outputs/apk/debug/android-debug.apk
 13. 点击 `完成` 展示课后总结，并把本次总结写入本地练习记录。
 14. 点击 `记录` 查看本地练习记录、最近分数、下一步目标，并可重复练习同一场景或清空记录。
 15. 回到首页后，今日完成 turn 数和最近一次总结会从本地历史更新。
+16. 设置页的引擎策略会传入练习页：稳定演示使用云端优先、本地兜底；效果优先预留云端增强入口并展示当前回退链路；离线优先直接使用本地规则分析。
 
 Android 真机默认通过 USB bridge 访问 `http://127.0.0.1:8000`，对应本机运行的 FastAPI 服务。后端不可用时仍可通过本地 fallback 完成练习、总结和历史记录。
 
@@ -89,7 +90,7 @@ adb reverse tcp:8000 tcp:8000
 - `core.PracticeUiState`：练习页状态模型，统一维护状态文案、主操作、时间线、结束和错误恢复标记。
 - `core.VoiceUiState`：语音输入/TTS 状态模型，维护 speech/demo 模式、权限、识别文本、错误和 TTS 开关。
 - `core.CoachEndpointConfig`：云端教练地址配置，维护 USB 真机、模拟器和自定义地址。
-- `core.EngineSelectionConfig`：ASR、TTS 和判定引擎策略预留接口，维护稳定演示、效果优先和离线优先模式。
+- `core.EngineSelectionConfig`：ASR、TTS 和判定引擎策略预留接口，维护稳定演示、效果优先、离线优先模式和练习页 runtime 解析。
 - `core.CoachBackendUiState`：云端/fallback 状态模型，维护 Auto、云端、本地和反馈来源。
 - `core.PracticeHistoryStore`：进程内本地历史仓库，负责记录完成摘要、最近记录、累计 turn 和清空记录。
 - `core.AppNavigator`：轻量路由状态，当前覆盖 Home、Scenarios、ScenarioDetail、Practice、History、Settings。

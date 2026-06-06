@@ -21,4 +21,12 @@ class AppRootContractTest {
         assertTrue(source.contains("engineSelectionConfig = engineSelectionConfig"))
         assertTrue(source.contains("onEngineSelectionChange = { engineSelectionConfig = it }"))
     }
+
+    @Test
+    fun practiceScreenReceivesEngineSelectionConfig() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/AppRoot.kt").readText()
+
+        assertTrue(source.contains("PracticeScreen("))
+        assertTrue(source.contains("coachBaseUrl = endpointConfig.baseUrl,\n            engineSelectionConfig = engineSelectionConfig"))
+    }
 }

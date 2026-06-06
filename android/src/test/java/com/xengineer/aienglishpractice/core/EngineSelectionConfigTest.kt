@@ -30,6 +30,16 @@ class EngineSelectionConfigTest {
     }
 
     @Test
+    fun accuracyProfileKeepsRuntimeFallbackUntilCloudEnginesAreConnected() {
+        val config = EngineSelectionConfig.default().useAccuracyFirst()
+
+        assertEquals(CoachBackendMode.Auto, config.preferredBackendMode)
+        assertTrue(config.runtimeSummaries.any { it.contains("回退 Android SpeechRecognizer") })
+        assertTrue(config.runtimeSummaries.any { it.contains("回退 Android TextToSpeech") })
+        assertTrue(config.runtimeSummaries.any { it.contains("云端优先，本地兜底") })
+    }
+
+    @Test
     fun offlineProfileKeepsDeviceSideEngines() {
         val config = EngineSelectionConfig.default().useOfflineFirst()
 
@@ -37,5 +47,6 @@ class EngineSelectionConfigTest {
         assertEquals(AsrEngineMode.AndroidSpeechRecognizer, config.asrEngine)
         assertEquals(TtsEngineMode.AndroidTextToSpeech, config.ttsEngine)
         assertEquals(EvaluationEngineMode.LocalRules, config.evaluationEngine)
+        assertEquals(CoachBackendMode.LocalOnly, config.preferredBackendMode)
     }
 }

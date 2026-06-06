@@ -48,6 +48,7 @@ fun AppRoot() {
         is AppRoute.Practice -> PracticeScreen(
             scenarioId = current.scenarioId,
             coachBaseUrl = endpointConfig.baseUrl,
+            engineSelectionConfig = engineSelectionConfig,
             onBackHome = { navigate { goHome() } },
             onSessionFinished = { entry ->
                 historyStore.record(entry)

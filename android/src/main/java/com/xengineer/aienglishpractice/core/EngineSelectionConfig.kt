@@ -85,11 +85,25 @@ data class EngineSelectionConfig(
     val ttsEngine: TtsEngineMode,
     val evaluationEngine: EvaluationEngineMode
 ) {
+    val preferredBackendMode: CoachBackendMode
+        get() = when (evaluationEngine) {
+            EvaluationEngineMode.LocalRules -> CoachBackendMode.LocalOnly
+            EvaluationEngineMode.LocalRulesLanguageTool,
+            EvaluationEngineMode.CloudCoachHybrid -> CoachBackendMode.Auto
+        }
+
     val engineSummaries: List<String>
         get() = listOf(
             asrEngine.summary("ASR"),
             ttsEngine.summary("TTS"),
             evaluationEngine.summary("判定")
+        )
+
+    val runtimeSummaries: List<String>
+        get() = listOf(
+            asrEngine.runtimeSummary(),
+            ttsEngine.runtimeSummary(),
+            evaluationEngine.runtimeSummary()
         )
 
     fun useStableDemo(): EngineSelectionConfig = copy(
@@ -128,3 +142,19 @@ private fun AsrEngineMode.summary(role: String): String = "$role：$title（${av
 private fun TtsEngineMode.summary(role: String): String = "$role：$title（${availability.label}）"
 
 private fun EvaluationEngineMode.summary(role: String): String = "$role：$title（${availability.label}）"
+
+private fun AsrEngineMode.runtimeSummary(): String = when (this) {
+    AsrEngineMode.AndroidSpeechRecognizer -> "ASR：Android SpeechRecognizer（当前生效）"
+    AsrEngineMode.CloudAsr -> "ASR：云端 ASR / PaddleSpeech（预留，当前回退 Android SpeechRecognizer）"
+}
+
+private fun TtsEngineMode.runtimeSummary(): String = when (this) {
+    TtsEngineMode.AndroidTextToSpeech -> "TTS：Android TextToSpeech（当前生效）"
+    TtsEngineMode.CloudNeuralTts -> "TTS：云端神经 TTS（预留，当前回退 Android TextToSpeech）"
+}
+
+private fun EvaluationEngineMode.runtimeSummary(): String = when (this) {
+    EvaluationEngineMode.LocalRulesLanguageTool -> "判定：本地规则 + LanguageTool（云端优先，本地兜底）"
+    EvaluationEngineMode.LocalRules -> "判定：本地规则（仅本地分析）"
+    EvaluationEngineMode.CloudCoachHybrid -> "判定：云端教练混合判定（预留，当前云端优先，本地兜底）"
+}
