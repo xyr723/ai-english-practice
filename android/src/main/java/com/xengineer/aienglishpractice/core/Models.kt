@@ -209,10 +209,28 @@ data class TurnResult(
     val source: CoachFeedbackSource = CoachFeedbackSource.LocalFallback
 )
 
+data class SummaryScoreBreakdown(
+    val label: String,
+    val score: Int,
+    val reason: String
+)
+
+data class SummaryTurnReview(
+    val index: Int,
+    val userText: String,
+    val betterExpression: String,
+    val reply: String,
+    val score: Int,
+    val tips: List<String>
+)
+
 data class PracticeSummary(
     val turnCount: Int,
     val averageScore: Int,
     val strengths: List<String>,
     val improvements: List<String>,
-    val nextGoal: String
+    val nextGoal: String,
+    val scoreBreakdown: List<SummaryScoreBreakdown> = emptyList(),
+    val turnReviews: List<SummaryTurnReview> = emptyList(),
+    val practicePlan: List<String> = emptyList()
 )

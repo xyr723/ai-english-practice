@@ -47,4 +47,14 @@ class PracticeScreenContractTest {
 
         assertTrue(source.contains("com.airbnb.android:lottie-compose"))
     }
+
+    @Test
+    fun practiceScreenUsesDedicatedEnhancedSummaryPage() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("EnhancedSummaryPage"))
+        assertTrue(source.contains("scoreBreakdown"))
+        assertTrue(source.contains("turnReviews"))
+        assertTrue(source.contains("practicePlan"))
+    }
 }

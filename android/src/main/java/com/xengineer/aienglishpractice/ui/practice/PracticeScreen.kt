@@ -40,10 +40,12 @@ import com.xengineer.aienglishpractice.core.PracticeUiState
 import com.xengineer.aienglishpractice.core.PracticeHistoryEntry
 import com.xengineer.aienglishpractice.core.PracticeSession
 import com.xengineer.aienglishpractice.core.PracticeScenario
+import com.xengineer.aienglishpractice.core.PracticeSummary
 import com.xengineer.aienglishpractice.core.RuleCorrectionEngine
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.core.ScoreEngine
 import com.xengineer.aienglishpractice.core.SpeechListenMode
+import com.xengineer.aienglishpractice.core.SummaryTurnReview
 import com.xengineer.aienglishpractice.core.VoiceInputMode
 import com.xengineer.aienglishpractice.core.VoiceUiState
 import com.xengineer.aienglishpractice.network.CoachAnalyzePayload
@@ -301,6 +303,8 @@ fun PracticeScreen(
         textToSpeech.speak(replyText(scenario.opening, uiState))
     }
 
+    val finishedSummary = uiState.summary
+
     StageScaffold {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -311,54 +315,66 @@ fun PracticeScreen(
                 subtitle = "${scenario.level} · ${scenario.estimatedMinutes} 分钟 · ${scenario.sceneTone}",
                 onBackHome = onBackHome
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatusPanel(
+            if (uiState.phase == PracticeState.Finished && finishedSummary != null) {
+                EnhancedSummaryPage(
+                    scenario = scenario,
+                    summary = finishedSummary,
+                    onPracticeAgain = { restartScene() },
+                    onBackHome = onBackHome,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StatusPanel(
+                        uiState = uiState,
+                        voiceState = voiceState,
+                        backendState = backendState,
+                        modifier = Modifier.weight(0.8f)
+                    )
+                    FeedbackPanel(uiState = uiState, modifier = Modifier.weight(1f))
+                    CoachPanel(
+                        opening = scenario.opening,
+                        openingTranslation = scenario.openingTranslation,
+                        characterState = CoachCharacterState.from(
+                            practiceState = uiState.phase,
+                            isTtsSpeaking = voiceState.isTtsSpeaking
+                        ),
+                        uiState = uiState,
+                        voiceState = voiceState,
+                        onSpeakCoach = { speakCoachText() },
+                        modifier = Modifier.weight(1.1f)
+                    )
+                }
+                PracticeControls(
                     uiState = uiState,
                     voiceState = voiceState,
                     backendState = backendState,
-                    modifier = Modifier.weight(0.8f)
-                )
-                FeedbackPanel(uiState = uiState, modifier = Modifier.weight(1f))
-                CoachPanel(
-                    opening = scenario.opening,
-                    openingTranslation = scenario.openingTranslation,
-                    characterState = CoachCharacterState.from(
-                        practiceState = uiState.phase,
-                        isTtsSpeaking = voiceState.isTtsSpeaking
-                    ),
-                    uiState = uiState,
-                    voiceState = voiceState,
-                    onSpeakCoach = { speakCoachText() },
-                    modifier = Modifier.weight(1.1f)
+                    onPrimaryAction = { advancePrimary() },
+                    onStartSpeech = { startSpeechInput() },
+                    onStartLongSpeech = { startSpeechInput(SpeechListenMode.Extended) },
+                    onToggleVoiceMode = { toggleVoiceMode() },
+                    onToggleTts = { voiceState = voiceState.setTtsEnabled(!voiceState.ttsEnabled) },
+                    onFinish = {
+                        val summary = session.finish()
+                        val entry = PracticeHistoryEntry.fromSummary(
+                            scenario = scenario,
+                            summary = summary
+                        )
+                        onSessionFinished(entry)
+                        uiState = PracticeUiState.finished(
+                            scenario = scenario,
+                            summary = summary
+                        )
+                    }
                 )
             }
-            PracticeControls(
-                uiState = uiState,
-                voiceState = voiceState,
-                backendState = backendState,
-                onPrimaryAction = { advancePrimary() },
-                onStartSpeech = { startSpeechInput() },
-                onStartLongSpeech = { startSpeechInput(SpeechListenMode.Extended) },
-                onToggleVoiceMode = { toggleVoiceMode() },
-                onToggleTts = { voiceState = voiceState.setTtsEnabled(!voiceState.ttsEnabled) },
-                onFinish = {
-                    val summary = session.finish()
-                    val entry = PracticeHistoryEntry.fromSummary(
-                        scenario = scenario,
-                        summary = summary
-                    )
-                    onSessionFinished(entry)
-                    uiState = PracticeUiState.finished(
-                        scenario = scenario,
-                        summary = summary
-                    )
-                }
-            )
         }
     }
 }
@@ -525,6 +541,99 @@ private fun CoachPanel(
                     onClick = onSpeakCoach
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun EnhancedSummaryPage(
+    scenario: PracticeScenario,
+    summary: PracticeSummary,
+    onPracticeAgain: () -> Unit,
+    onBackHome: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        DarkPanel(modifier = Modifier.weight(0.95f).fillMaxHeight()) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("课后总结", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "${summary.averageScore}",
+                    color = Color.White,
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${scenario.name} · ${summary.turnCount} 轮完成",
+                    color = Color(0xFFEAD7C4),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text("下一目标", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+                Text(summary.nextGoal, color = Color.White)
+                Text("复练计划", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+                summary.practicePlan.forEachIndexed { index, item ->
+                    Text("${index + 1}. $item", color = Color(0xFFEAD7C4))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PrimaryAction(text = "再练一次", onClick = onPracticeAgain)
+                    PrimaryAction(text = "回首页", onClick = onBackHome)
+                }
+            }
+        }
+        LightPanel(modifier = Modifier.weight(1.1f).fillMaxHeight()) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("能力雷达", color = PracticeColors.Cafe, fontWeight = FontWeight.Bold)
+                summary.scoreBreakdown.forEach { score ->
+                    SummaryScoreRow(score.label, score.score, score.reason)
+                }
+                Text("优势", color = PracticeColors.Cafe, fontWeight = FontWeight.Bold)
+                summary.strengths.forEach { item -> Text("• $item", color = PracticeColors.Ink) }
+                Text("需要改进", color = PracticeColors.Cafe, fontWeight = FontWeight.Bold)
+                summary.improvements.forEach { item -> Text("• $item", color = PracticeColors.Ink) }
+            }
+        }
+        LightPanel(modifier = Modifier.weight(1.25f).fillMaxHeight()) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("逐轮复盘", color = PracticeColors.Cafe, fontWeight = FontWeight.Bold)
+                summary.turnReviews.forEach { review ->
+                    SummaryTurnReviewCard(review)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryScoreRow(label: String, score: Int, reason: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(label, color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
+            Text("$score", color = PracticeColors.Cafe, fontWeight = FontWeight.Bold)
+        }
+        Text(reason, color = PracticeColors.Ink, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun SummaryTurnReviewCard(
+    review: SummaryTurnReview
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = "第 ${review.index} 轮 · ${review.score} 分",
+            color = PracticeColors.Cafe,
+            fontWeight = FontWeight.Bold
+        )
+        Text("你说：${review.userText}", color = PracticeColors.Ink)
+        Text("优化：${review.betterExpression}", color = PracticeColors.Ink)
+        if (review.tips.isNotEmpty()) {
+            Text("提示：${review.tips.joinToString("；")}", color = PracticeColors.Ink)
         }
     }
 }
