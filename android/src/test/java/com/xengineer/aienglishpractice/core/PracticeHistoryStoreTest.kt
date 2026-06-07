@@ -123,6 +123,20 @@ class PracticeHistoryStoreTest {
     }
 
     @Test
+    fun streakDaysCountsConsecutivePracticeDays() {
+        val store = PracticeHistoryStore()
+        store.record(historyEntry(id = "day-8", scenario = PracticeScenario.restaurant(), completedAtEpochDay = 8L))
+        store.record(historyEntry(id = "day-10-a", scenario = PracticeScenario.restaurant(), completedAtEpochDay = 10L))
+        store.record(historyEntry(id = "day-10-b", scenario = PracticeScenario.meeting(), completedAtEpochDay = 10L))
+        store.record(historyEntry(id = "day-11", scenario = PracticeScenario.restaurant(), completedAtEpochDay = 11L))
+        store.record(historyEntry(id = "day-12", scenario = PracticeScenario.interview(), completedAtEpochDay = 12L))
+
+        assertEquals(3, store.streakDays(todayEpochDay = 12L))
+        assertEquals(3, store.streakDays(todayEpochDay = 13L))
+        assertEquals(0, store.streakDays(todayEpochDay = 14L))
+    }
+
+    @Test
     fun clearRemovesPersistedHistory() {
         val storage = FakePracticeHistoryStorage()
         PracticeHistoryStore(storage).record(historyEntry(id = "entry-1", scenario = PracticeScenario.restaurant()))
@@ -154,6 +168,7 @@ class PracticeHistoryStoreTest {
 
         assertEquals(3, dashboard.practiceStats.completedTurns)
         assertEquals(2, dashboard.practiceStats.todayCompletedSessions)
+        assertEquals(1, dashboard.practiceStats.streakDays)
         assertEquals("meeting", dashboard.recentHistory?.scenarioId)
         assertEquals(2, dashboard.recentSummary?.turnCount)
     }

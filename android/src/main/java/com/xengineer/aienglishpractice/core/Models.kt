@@ -252,6 +252,11 @@ data class CorrectionIssue(
     val suggestion: String
 )
 
+data class RecognitionAlternative(
+    val transcript: String,
+    val confidence: Float?
+)
+
 data class ScoreDetail(
     val score: Int,
     val reason: String
@@ -297,5 +302,6 @@ data class PracticeSummary(
     val nextGoal: String,
     val scoreBreakdown: List<SummaryScoreBreakdown> = emptyList(),
     val turnReviews: List<SummaryTurnReview> = emptyList(),
-    val practicePlan: List<String> = emptyList()
+    val practicePlan: List<String> = emptyList(),
+    val source: CoachFeedbackSource = CoachFeedbackSource.LocalFallback
 )

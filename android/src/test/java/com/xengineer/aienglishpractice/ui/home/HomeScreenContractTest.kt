@@ -50,4 +50,12 @@ class HomeScreenContractTest {
         assertTrue(source.contains("自定义场景"))
         assertFalse(source.contains("Text(\"更多\""))
     }
+
+    @Test
+    fun scenarioTilesExposeStableUiTestTagsForEndToEndSmokeTests() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/home/HomeScreen.kt").readText()
+
+        assertTrue(source.contains("testTag"))
+        assertTrue(source.contains("scenario-tile-\${spec.scenarioId ?: spec.prompt ?: spec.title}"))
+    }
 }

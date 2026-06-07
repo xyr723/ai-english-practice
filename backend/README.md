@@ -10,6 +10,24 @@ python3 -m venv .venv
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
+## DeepSeek 大模型教练
+
+后端使用 OpenAI 兼容的 Chat Completions 格式调用 DeepSeek。启动前配置环境变量即可启用，不要把真实 API Key 写入仓库：
+
+```bash
+export DEEPSEEK_API_KEY="<your-deepseek-api-key>"
+export DEEPSEEK_MODEL=deepseek-v4-flash
+export DEEPSEEK_TIMEOUT_SECONDS=8.0
+```
+
+可选配置：
+
+```bash
+export DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+`/coach/analyze` 会优先使用 DeepSeek 生成教练回复、中文翻译、推荐表达和学习建议，并返回 `source=DEEPSEEK`。未配置 key、请求超时或响应格式异常时，接口会自动回退到规则纠错、场景脚本回复和评分链路。
+
 ## Android 真机联调
 
 USB 真机推荐使用 `adb reverse`，Android 端默认云端教练地址为 `http://127.0.0.1:8000`：
@@ -58,7 +76,7 @@ PYTHONPATH=. .venv/bin/python -m pytest tests -q
 - Python 3.11+
 - FastAPI
 - LanguageTool
-- 可选 LangChain / 本地 LLM
+- DeepSeek LLM
 - 可选 PaddleSpeech
 
 ## 稳定性要求

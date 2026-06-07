@@ -7,6 +7,7 @@ enum class CoachBackendMode {
 }
 
 enum class CoachFeedbackSource {
+    DeepSeek,
     BackendApi,
     BackendRule,
     LanguageTool,
@@ -16,6 +17,7 @@ enum class CoachFeedbackSource {
 
     companion object {
         fun fromBackendSource(source: String?): CoachFeedbackSource = when (source) {
+            "DEEPSEEK" -> DeepSeek
             "RULE_ONLY" -> BackendRule
             "LANGUAGE_TOOL" -> LanguageTool
             "RULE_FALLBACK" -> BackendRuleFallback
@@ -48,6 +50,7 @@ data class CoachBackendUiState(
     val statusText: String
         get() = when {
             isChecking -> "正在连接云端。"
+            lastSource == CoachFeedbackSource.DeepSeek -> "DeepSeek AI 教练已启用。"
             lastSource == CoachFeedbackSource.BackendApi -> "云端教练已启用。"
             lastSource == CoachFeedbackSource.BackendRule -> "云端规则纠错已启用。"
             lastSource == CoachFeedbackSource.LanguageTool -> "LanguageTool 增强纠错已启用。"

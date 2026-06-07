@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -217,6 +218,7 @@ private fun ScenarioTile(
             .height(108.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Black.copy(alpha = 0.28f))))
+            .testTag("scenario-tile-${spec.scenarioId ?: spec.prompt ?: spec.title}")
             .clickable(onClick = onClick)
             .padding(12.dp)
     ) {

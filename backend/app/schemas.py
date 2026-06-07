@@ -16,9 +16,9 @@ class CoachAnalyzeRequest(BaseModel):
     durationMs: int = 0
     asrConfidence: Optional[float] = None
     turnIndex: int = 0
+    recognitionAlternatives: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class SummaryRequest(BaseModel):
     scenarioId: str
     turns: List[Dict[str, Any]] = Field(default_factory=list)
-

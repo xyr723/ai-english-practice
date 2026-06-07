@@ -90,27 +90,35 @@ data class PracticeUiState(
             errorMessage = errorMessage
         )
 
-        fun listening(scenario: PracticeScenario): PracticeUiState = forPhase(
+        fun listening(
+            scenario: PracticeScenario,
+            turnResult: TurnResult? = null
+        ): PracticeUiState = forPhase(
             scenario = scenario,
-            phase = PracticeState.Listening
+            phase = PracticeState.Listening,
+            turnResult = turnResult
         )
 
         fun recognizing(
             scenario: PracticeScenario,
-            transcript: String
+            transcript: String,
+            turnResult: TurnResult? = null
         ): PracticeUiState = forPhase(
             scenario = scenario,
             phase = PracticeState.Recognizing,
-            transcript = transcript
+            transcript = transcript,
+            turnResult = turnResult
         )
 
         fun thinking(
             scenario: PracticeScenario,
-            transcript: String
+            transcript: String,
+            turnResult: TurnResult? = null
         ): PracticeUiState = forPhase(
             scenario = scenario,
             phase = PracticeState.Thinking,
-            transcript = transcript
+            transcript = transcript,
+            turnResult = turnResult
         )
 
         fun speaking(

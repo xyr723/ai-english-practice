@@ -7,6 +7,10 @@ class CoachFeedbackSourceTest {
     @Test
     fun fromBackendSourceMapsKnownCorrectionSources() {
         assertEquals(
+            CoachFeedbackSource.DeepSeek,
+            CoachFeedbackSource.fromBackendSource("DEEPSEEK")
+        )
+        assertEquals(
             CoachFeedbackSource.LanguageTool,
             CoachFeedbackSource.fromBackendSource("LANGUAGE_TOOL")
         )

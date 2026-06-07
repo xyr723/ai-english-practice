@@ -17,7 +17,7 @@ data class HomeDashboard(
                     todayGoalMinutes = 12,
                     completedTurns = historyStore.totalTurns(),
                     todayCompletedSessions = historyStore.completedTodayCount(),
-                    streakDays = 1
+                    streakDays = historyStore.streakDays()
                 ),
                 quickActions = listOf(
                     QuickAction("浏览场景", AppRoute.Scenarios),

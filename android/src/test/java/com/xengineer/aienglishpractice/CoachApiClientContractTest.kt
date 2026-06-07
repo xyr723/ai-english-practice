@@ -10,7 +10,8 @@ class CoachApiClientContractTest {
     fun coachApiClientAllowsSlowCloudAnalysisBeforeFallingBackLocally() {
         val source = File("src/main/java/com/xengineer/aienglishpractice/network/CoachApiClient.kt").readText()
 
-        assertTrue(source.contains("private val timeoutMs: Int = 8000"))
+        assertTrue(source.contains("private val timeoutMs: Int = 20000"))
+        assertFalse(source.contains("private val timeoutMs: Int = 8000"))
         assertFalse(source.contains("private val timeoutMs: Int = 2500"))
     }
 }

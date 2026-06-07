@@ -13,6 +13,8 @@ class PracticeSession(
     val turnCount: Int
         get() = turns.size
 
+    fun recordedTurns(): List<TurnResult> = turns.toList()
+
     fun start() {
         state = PracticeState.Idle
     }
@@ -20,7 +22,8 @@ class PracticeSession(
     fun submitTurn(
         text: String,
         durationMs: Int,
-        asrConfidence: Float?
+        asrConfidence: Float?,
+        recognitionAlternatives: List<RecognitionAlternative> = emptyList()
     ): TurnResult {
         state = PracticeState.Thinking
 
@@ -32,7 +35,8 @@ class PracticeSession(
             asrConfidence = asrConfidence,
             correction = correction,
             matchedGoals = matchedGoals.size,
-            totalGoals = scenario.goals.size
+            totalGoals = scenario.goals.size,
+            recognitionAlternatives = recognitionAlternatives
         )
         val replyTurn = nextReplyTurn(text)
         val result = TurnResult(
@@ -140,8 +144,7 @@ class PracticeSession(
     private fun nextReply(): String {
         val index = turns.size
         return scenario.turns.getOrNull(index)?.reply
-            ?: scenario.fallbackReplies.firstOrNull()
-            ?: "Could you say that again, please?"
+            ?: completionReply()
     }
 
     private fun nextReplyTurn(text: String): ScenarioTurn? {
@@ -160,9 +163,14 @@ class PracticeSession(
     private fun nextReplyTranslation(): String {
         val index = turns.size
         return scenario.turns.getOrNull(index)?.replyTranslation
-            ?: scenario.fallbackReplyTranslations.firstOrNull()
-            ?: ""
+            ?: completionReplyTranslation()
     }
+
+    private fun completionReply(): String =
+        "Great. That completes this practice. Try one more answer with a specific detail."
+
+    private fun completionReplyTranslation(): String =
+        "很好。本次练习已完成。下一次回答时再补充一个具体细节。"
 
     private fun matchedGoals(text: String): List<String> {
         val lowered = text.lowercase()

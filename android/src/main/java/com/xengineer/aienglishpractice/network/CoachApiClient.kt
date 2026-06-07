@@ -1,6 +1,7 @@
 package com.xengineer.aienglishpractice.network
 
 import com.xengineer.aienglishpractice.core.CoachFeedbackSource
+import com.xengineer.aienglishpractice.core.RecognitionAlternative
 import com.xengineer.aienglishpractice.core.ScoreBundle
 import com.xengineer.aienglishpractice.core.ScoreDetail
 import com.xengineer.aienglishpractice.core.TurnResult
@@ -9,11 +10,12 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 
 class CoachApiClient(
     private val baseUrl: String,
-    private val timeoutMs: Int = 8000
+    private val timeoutMs: Int = 20000
 ) {
     suspend fun analyze(request: CoachAnalyzePayload): TurnResult = withContext(Dispatchers.IO) {
         val connection = (URL("${baseUrl.trimEnd('/')}/coach/analyze").openConnection() as HttpURLConnection)
@@ -50,7 +52,8 @@ data class CoachAnalyzePayload(
     val turnText: String,
     val durationMs: Int,
     val asrConfidence: Float?,
-    val turnIndex: Int
+    val turnIndex: Int,
+    val recognitionAlternatives: List<RecognitionAlternative> = emptyList()
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("scenarioId", scenarioId)
@@ -59,6 +62,18 @@ data class CoachAnalyzePayload(
         .put("durationMs", durationMs)
         .put("asrConfidence", asrConfidence)
         .put("turnIndex", turnIndex)
+        .put(
+            "recognitionAlternatives",
+            JSONArray().apply {
+                recognitionAlternatives.forEach { alternative ->
+                    put(
+                        JSONObject()
+                            .put("transcript", alternative.transcript)
+                            .put("confidence", alternative.confidence)
+                    )
+                }
+            }
+        )
 }
 
 private fun JSONObject.toTurnResult(userText: String): TurnResult = TurnResult(

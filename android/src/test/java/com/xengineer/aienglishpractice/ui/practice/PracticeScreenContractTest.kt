@@ -138,6 +138,16 @@ class PracticeScreenContractTest {
     }
 
     @Test
+    fun cloudFeedbackRequestIgnoresDuplicateAndStaleTurnResults() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("if (backendState.isChecking) return"))
+        assertTrue(source.contains("val activeTurnIndex = session.turnCount"))
+        assertTrue(source.contains("turnIndex = activeTurnIndex"))
+        assertTrue(source.contains("if (session.turnCount != activeTurnIndex) return@launch"))
+    }
+
+    @Test
     fun practiceStageUsesScrollableConversationHistoryInsteadOfSingleTurnPanel() {
         val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
 
@@ -156,10 +166,32 @@ class PracticeScreenContractTest {
         assertTrue(source.contains("rememberInfiniteTransition"))
         assertTrue(source.contains("animateFloat"))
         assertTrue(source.contains("isActive: Boolean"))
-        assertTrue(source.contains("inputLocked: Boolean"))
+        assertTrue(source.contains("isListening: Boolean"))
         assertTrue(source.contains("isMicPressed"))
         assertTrue(source.contains("onMicPressChanged"))
-        assertTrue(source.contains("正在说话中"))
+        assertTrue(source.contains("再次点击结束录音"))
+        assertTrue(source.contains("点击开始录音"))
+        assertFalse(source.contains("按住说话"))
+        assertFalse(source.contains("请再按住说话重试"))
+    }
+
+    @Test
+    fun defaultMicTapUsesExtendedListeningForEnglishLearners() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("fun startSpeechInput(listenMode: SpeechListenMode = SpeechListenMode.Extended)"))
+        assertTrue(source.contains("onStartSpeech = { startSpeechInput(SpeechListenMode.Extended) }"))
+    }
+
+    @Test
+    fun micTapCanStopActiveSpeechRecognition() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("fun stopSpeechInput()"))
+        assertTrue(source.contains("speechRecognizer.stopListening()"))
+        assertTrue(source.contains("onStopSpeech"))
+        assertTrue(source.contains("if (isListening) onStopSpeech() else onStartSpeech()"))
+        assertFalse(source.contains("if (inputLocked) return@pointerInput"))
     }
 
     @Test
@@ -173,12 +205,72 @@ class PracticeScreenContractTest {
     }
 
     @Test
+    fun speechErrorDoesNotReplaceCoachDialogueWithRecoveryCopy() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("PracticeState.Error -> opening"))
+        assertFalse(source.contains("恢复练习后，可继续当前场景。"))
+    }
+
+    @Test
+    fun speechRecognitionErrorNeverSubmitsFixedDemoTranscript() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("val recognizedTranscript = voiceState.bestTranscript"))
+        assertTrue(source.contains("submitRecognizedSpeech(recognizedTranscript, speechMetrics)"))
+        assertFalse(source.contains("val fallbackTranscript = demoTranscript"))
+        assertFalse(source.contains("showFeedback(fallbackTranscript)"))
+    }
+
+    @Test
     fun speechFinalResultAutomaticallySubmitsForCoachFeedback() {
         val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
 
         assertTrue(source.contains("submitRecognizedSpeech"))
-        assertTrue(source.contains("onFinal = { text ->"))
-        assertTrue(source.contains("submitRecognizedSpeech(transcript)"))
+        assertTrue(source.contains("onFinal = { result ->"))
+        assertTrue(source.contains("submitRecognizedSpeech(transcript,"))
+    }
+
+    @Test
+    fun speechFeedbackUsesMeasuredDurationAndRecognitionConfidence() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+        val recognizerSource = File("src/main/java/com/xengineer/aienglishpractice/voice/SpeechRecognizerAdapter.kt").readText()
+
+        assertTrue(source.contains("SpeechTurnMetrics"))
+        assertTrue(source.contains("speechStartedAtMs"))
+        assertTrue(source.contains("actualSpeechMetrics("))
+        assertTrue(source.contains("showFeedback(transcript, speechMetrics, recognitionAlternatives)"))
+        assertTrue(recognizerSource.contains("SpeechRecognizer.CONFIDENCE_SCORES"))
+        assertTrue(recognizerSource.contains("SpeechRecognitionResult"))
+        assertTrue(recognizerSource.contains("onSpeechStarted"))
+        assertTrue(recognizerSource.contains("onSpeechEnded"))
+    }
+
+    @Test
+    fun completedScriptedTurnsUseLocalFeedbackInsteadOfBackendFallback() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("activeTurnIndex >= scenario.turns.size"))
+        assertTrue(source.contains("submitLocalFeedback(transcript, metrics, recognitionAlternatives)"))
+    }
+
+    @Test
+    fun finishPracticeRequestsBackendSummaryAndFallsBackLocally() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("SummaryApiClient"))
+        assertTrue(source.contains("summaryApiClient.summarize"))
+        assertTrue(source.contains("session.recordedTurns()"))
+        assertTrue(source.contains("getOrElse { localSummary }"))
+        assertTrue(source.contains("PracticeHistoryEntry.fromSummary"))
+    }
+
+    @Test
+    fun listeningKeepsLatestCoachReplyInsteadOfReturningToOpening() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("PracticeState.Recognizing -> uiState.turnResult?.reply ?: opening"))
+        assertTrue(source.contains("turnResult = uiState.turnResult"))
     }
 
     @Test
@@ -224,10 +316,29 @@ class PracticeScreenContractTest {
     }
 
     @Test
+    fun summaryPageDoesNotShowPlaceholderRankingOrDuration() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertFalse(source.contains("72%"))
+        assertFalse(source.contains("08:32"))
+        assertTrue(source.contains("summaryDurationLabel"))
+        assertTrue(source.contains("durationLabel = summaryDurationLabel"))
+    }
+
+    @Test
     fun summaryRadarUsesFiveScoreDimensions() {
         val source = File("src/main/java/com/xengineer/aienglishpractice/ui/shared/AbilityRadarChart.kt").readText()
 
         assertTrue(source.contains("val values = scores.take(5)"))
         assertFalse(source.contains("scores.take(4)"))
+    }
+
+    @Test
+    fun practiceFlowExposesStableUiTestTagsForEndToEndSmokeTests() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("practice-primary-action"))
+        assertTrue(source.contains("practice-finish-action"))
+        assertTrue(source.contains("practice-summary-page"))
     }
 }

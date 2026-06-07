@@ -50,18 +50,29 @@ class PracticeUiStateTest {
     }
 
     @Test
+    fun listeningAndRecognizingCanKeepPreviousCoachReply() {
+        val previousResult = restaurantTurnResult(
+            reply = "No problem. Your order will be ready soon."
+        )
+
+        val listening = PracticeUiState.listening(
+            scenario = PracticeScenario.restaurant(),
+            turnResult = previousResult
+        )
+        val recognizing = PracticeUiState.recognizing(
+            scenario = PracticeScenario.restaurant(),
+            transcript = "Thank you",
+            turnResult = previousResult
+        )
+
+        assertEquals(previousResult, listening.turnResult)
+        assertEquals(previousResult, recognizing.turnResult)
+    }
+
+    @Test
     fun speakingStateAllowsNextTurnAndFinish() {
-        val result = TurnResult(
-            userText = "I want order a coffee",
-            betterExpression = "I'd like to order a coffee, please.",
-            reply = "Sure. Would you like anything to drink?",
-            scores = ScoreBundle(
-                grammar = ScoreDetail(84, "Found 2 issues."),
-                fluency = ScoreDetail(100, "Clear pace."),
-                pronunciation = ScoreDetail(80, "ASR confidence is 0.80."),
-                completion = ScoreDetail(66, "Matched 2 of 3 goals.")
-            ),
-            tips = listOf("Add a polite expression.")
+        val result = restaurantTurnResult(
+            reply = "Sure. Would you like anything to drink?"
         )
         val state = PracticeUiState.speaking(
             scenario = PracticeScenario.restaurant(),
@@ -107,4 +118,17 @@ class PracticeUiStateTest {
         assertTrue(state.canRetry)
         assertTrue(state.statusBody.contains("Microphone permission"))
     }
+
+    private fun restaurantTurnResult(reply: String): TurnResult = TurnResult(
+        userText = "I want order a coffee",
+        betterExpression = "I'd like to order a coffee, please.",
+        reply = reply,
+        scores = ScoreBundle(
+            grammar = ScoreDetail(84, "Found 2 issues."),
+            fluency = ScoreDetail(100, "Clear pace."),
+            pronunciation = ScoreDetail(80, "ASR confidence is 0.80."),
+            completion = ScoreDetail(66, "Matched 2 of 3 goals.")
+        ),
+        tips = listOf("Add a polite expression.")
+    )
 }

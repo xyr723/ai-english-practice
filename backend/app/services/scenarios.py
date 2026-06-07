@@ -63,6 +63,8 @@ def next_reply(scenario: Dict[str, object], turn_text: str, turn_index: int) -> 
 
     if isinstance(turns, list) and 0 <= turn_index < len(turns):
         return str(turns[turn_index]["reply"])
+    if isinstance(turns, list) and turns and turn_index >= len(turns):
+        return _completion_reply()
 
     fallback_replies = scenario.get("fallbackReplies", [])
     if isinstance(fallback_replies, list) and fallback_replies:
@@ -79,12 +81,22 @@ def next_reply_translation(scenario: Dict[str, object], turn_index: int, turn_te
 
     if isinstance(turns, list) and 0 <= turn_index < len(turns):
         return str(turns[turn_index].get("replyTranslation", ""))
+    if isinstance(turns, list) and turns and turn_index >= len(turns):
+        return _completion_reply_translation()
 
     fallback_translations = scenario.get("fallbackReplyTranslations", [])
     if isinstance(fallback_translations, list) and fallback_translations:
         return str(fallback_translations[0])
 
     return ""
+
+
+def _completion_reply() -> str:
+    return "Great. That completes this practice. Try one more answer with a specific detail."
+
+
+def _completion_reply_translation() -> str:
+    return "很好。本次练习已完成。下一次回答时再补充一个具体细节。"
 
 
 def _reply_override_index(scenario: Dict[str, object], turn_text: str, turn_index: int):

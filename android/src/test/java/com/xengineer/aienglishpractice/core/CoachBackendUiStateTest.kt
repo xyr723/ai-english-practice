@@ -65,6 +65,16 @@ class CoachBackendUiStateTest {
     }
 
     @Test
+    fun backendSuccessCanMarkDeepSeekSource() {
+        val source = CoachFeedbackSource.fromBackendSource("DEEPSEEK")
+        val state = CoachBackendUiState.initial().withBackendSuccess(source)
+
+        assertEquals(CoachFeedbackSource.DeepSeek, state.lastSource)
+        assertTrue(state.statusText.contains("DeepSeek"))
+        assertFalse(state.shouldUseLocalFallback)
+    }
+
+    @Test
     fun modeCyclesAutoBackendLocal() {
         val auto = CoachBackendUiState.initial()
         val backend = auto.nextMode()

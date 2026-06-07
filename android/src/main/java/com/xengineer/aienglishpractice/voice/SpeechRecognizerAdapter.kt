@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.xengineer.aienglishpractice.core.RecognitionAlternative
 import com.xengineer.aienglishpractice.core.SpeechListenMode
 import com.xengineer.aienglishpractice.core.SpeechTranscriptFormatter
 import java.util.Locale
@@ -20,7 +21,7 @@ class SpeechRecognizerAdapter(
 
     fun startListening(
         callbacks: SpeechRecognitionCallbacks,
-        listenMode: SpeechListenMode = SpeechListenMode.Standard
+        listenMode: SpeechListenMode = SpeechListenMode.Extended
     ) {
         if (!isAvailable()) {
             callbacks.onError("当前设备不可用语音识别。")
@@ -71,20 +72,24 @@ class SpeechRecognizerAdapter(
             callbacks.onReady()
         }
 
-        override fun onBeginningOfSpeech() = Unit
+        override fun onBeginningOfSpeech() {
+            callbacks.onSpeechStarted()
+        }
 
         override fun onRmsChanged(rmsdB: Float) = Unit
 
         override fun onBufferReceived(buffer: ByteArray?) = Unit
 
-        override fun onEndOfSpeech() = Unit
+        override fun onEndOfSpeech() {
+            callbacks.onSpeechEnded()
+        }
 
         override fun onError(error: Int) {
             callbacks.onError(error.toSpeechErrorMessage())
         }
 
         override fun onResults(results: Bundle?) {
-            callbacks.onFinal(SpeechTranscriptFormatter.normalize(results.bestRecognitionText()))
+            callbacks.onFinal(results.bestRecognitionResult())
         }
 
         override fun onPartialResults(partialResults: Bundle?) {
@@ -98,31 +103,59 @@ class SpeechRecognizerAdapter(
 private val SpeechListenMode.completeSilenceMillis: Int
     get() = when (this) {
         SpeechListenMode.Standard -> 2500
-        SpeechListenMode.Extended -> 6500
+        SpeechListenMode.Extended -> 9000
     }
 
 private val SpeechListenMode.possiblyCompleteSilenceMillis: Int
     get() = when (this) {
         SpeechListenMode.Standard -> 1500
-        SpeechListenMode.Extended -> 4500
+        SpeechListenMode.Extended -> 7000
     }
 
 private val SpeechListenMode.minimumLengthMillis: Int
     get() = when (this) {
-        SpeechListenMode.Standard -> 5000
-        SpeechListenMode.Extended -> 15000
+        SpeechListenMode.Standard -> 1200
+        SpeechListenMode.Extended -> 6000
     }
 
 data class SpeechRecognitionCallbacks(
     val onReady: () -> Unit,
+    val onSpeechStarted: () -> Unit = {},
+    val onSpeechEnded: () -> Unit = {},
     val onPartial: (String) -> Unit,
-    val onFinal: (String) -> Unit,
+    val onFinal: (SpeechRecognitionResult) -> Unit,
     val onError: (String) -> Unit
+)
+
+data class SpeechRecognitionResult(
+    val transcript: String,
+    val confidence: Float?,
+    val alternatives: List<RecognitionAlternative> = emptyList()
 )
 
 private fun Bundle?.bestRecognitionText(): String {
     val matches = this?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
     return matches?.firstOrNull().orEmpty()
+}
+
+private fun Bundle?.bestRecognitionResult(): SpeechRecognitionResult {
+    val matches = this?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
+    val confidenceScores = this?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
+    val alternatives = matches.mapIndexed { index, match ->
+        RecognitionAlternative(
+            transcript = SpeechTranscriptFormatter.normalize(match),
+            confidence = confidenceScores
+                ?.getOrNull(index)
+                ?.takeIf { it >= 0f }
+                ?.coerceIn(0f, 1f)
+        )
+    }
+    val confidence = alternatives.firstOrNull()?.confidence
+    return SpeechRecognitionResult(
+        transcript = SpeechTranscriptFormatter.normalize(bestRecognitionText()),
+        confidence = confidence,
+        alternatives = alternatives
+    )
 }
 
 private fun Int.toSpeechErrorMessage(): String = when (this) {

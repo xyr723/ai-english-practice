@@ -89,7 +89,7 @@ data class VoiceUiState(
         )
     }
 
-    fun startListening(listenMode: SpeechListenMode = SpeechListenMode.Standard): VoiceUiState = if (canStartSpeech) {
+    fun startListening(listenMode: SpeechListenMode = SpeechListenMode.Extended): VoiceUiState = if (canStartSpeech) {
         copy(
             isListening = true,
             listenMode = listenMode,
@@ -107,7 +107,7 @@ data class VoiceUiState(
     }
 
     fun startSpeechFromCurrentMode(
-        listenMode: SpeechListenMode = SpeechListenMode.Standard
+        listenMode: SpeechListenMode = SpeechListenMode.Extended
     ): VoiceUiState = useSpeechMode().startListening(listenMode)
 
     fun withPartialTranscript(text: String): VoiceUiState = copy(
@@ -124,7 +124,11 @@ data class VoiceUiState(
     )
 
     fun withRecognitionError(message: String): VoiceUiState = copy(
-        mode = VoiceInputMode.DemoFallback,
+        mode = if (recognizerAvailable && audioPermissionGranted) {
+            VoiceInputMode.SpeechRecognizer
+        } else {
+            VoiceInputMode.DemoFallback
+        },
         isListening = false,
         listenMode = SpeechListenMode.Standard,
         isTtsSpeaking = false,

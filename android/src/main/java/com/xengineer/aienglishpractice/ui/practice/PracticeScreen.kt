@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,6 +75,7 @@ import com.xengineer.aienglishpractice.core.PracticeHistoryEntry
 import com.xengineer.aienglishpractice.core.PracticeSession
 import com.xengineer.aienglishpractice.core.PracticeScenario
 import com.xengineer.aienglishpractice.core.PracticeSummary
+import com.xengineer.aienglishpractice.core.RecognitionAlternative
 import com.xengineer.aienglishpractice.core.RuleCorrectionEngine
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.core.ScoreEngine
@@ -86,6 +88,8 @@ import com.xengineer.aienglishpractice.core.VoiceInputMode
 import com.xengineer.aienglishpractice.core.VoiceUiState
 import com.xengineer.aienglishpractice.network.CoachAnalyzePayload
 import com.xengineer.aienglishpractice.network.CoachApiClient
+import com.xengineer.aienglishpractice.network.SummaryApiClient
+import com.xengineer.aienglishpractice.network.SummaryPayload
 import com.xengineer.aienglishpractice.ui.shared.DarkPanel
 import com.xengineer.aienglishpractice.ui.shared.AbilityRadarChart
 import com.xengineer.aienglishpractice.ui.shared.GlassPanel
@@ -113,6 +117,7 @@ fun PracticeScreen(
     scenarioOverride: PracticeScenario? = null,
     coachBaseUrl: String = CoachBackendUiState.DEFAULT_BASE_URL,
     engineSelectionConfig: EngineSelectionConfig = EngineSelectionConfig.default(),
+    enableMotion: Boolean = true,
     onBackHome: () -> Unit,
     onSessionFinished: (PracticeHistoryEntry) -> Unit = {}
 ) {
@@ -129,6 +134,8 @@ fun PracticeScreen(
     }
     var cloudErrorMessage by remember(scenarioId) { mutableStateOf<String?>(null) }
     var isMicPressed by remember(scenarioId) { mutableStateOf(false) }
+    var speechStartedAtMs by remember(scenarioId) { mutableStateOf<Long?>(null) }
+    var speechEndedAtMs by remember(scenarioId) { mutableStateOf<Long?>(null) }
     var backendState by remember(scenarioId, coachBaseUrl, engineSelectionConfig) {
         mutableStateOf(
             CoachBackendUiState.initial(
@@ -138,6 +145,9 @@ fun PracticeScreen(
         )
     }
     val coachApiClient = remember(backendState.baseUrl) { CoachApiClient(backendState.baseUrl) }
+    val summaryApiClient = remember(backendState.baseUrl) { SummaryApiClient(backendState.baseUrl) }
+    var isFinishingSummary by remember(scenarioId) { mutableStateOf(false) }
+    var summaryDurationLabel by remember(scenarioId) { mutableStateOf("") }
     val demoTranscript = remember(scenarioId) { demoTranscriptFor(scenario.id) }
     val speechRecognizer = remember(context) {
         SpeechRecognizerAdapter(context.applicationContext)
@@ -202,7 +212,10 @@ fun PracticeScreen(
         practiceStartedAtMs = System.currentTimeMillis()
         conversationMessages = initialConversationMessages(scenario)
         cloudErrorMessage = null
+        summaryDurationLabel = ""
         voiceState = voiceState.useDemoMode()
+        speechStartedAtMs = null
+        speechEndedAtMs = null
         backendState = CoachBackendUiState.initial(
             baseUrl = coachBaseUrl,
             mode = engineSelectionConfig.preferredBackendMode
@@ -225,11 +238,33 @@ fun PracticeScreen(
         )
     }
 
-    fun submitLocalFeedback(transcript: String) {
+    fun demoSpeechMetrics(): SpeechTurnMetrics = SpeechTurnMetrics(
+        durationMs = demoDurationFor(scenario.id),
+        asrConfidence = demoConfidenceFor(scenario.id)
+    )
+
+    fun actualSpeechMetrics(asrConfidence: Float?): SpeechTurnMetrics {
+        val endedAtMs = speechEndedAtMs ?: System.currentTimeMillis()
+        val durationMs = speechStartedAtMs
+            ?.let { startedAt -> (endedAtMs - startedAt).toInt().coerceAtLeast(1) }
+            ?: 0
+        return SpeechTurnMetrics(
+            durationMs = durationMs,
+            asrConfidence = asrConfidence
+        )
+    }
+
+    fun submitLocalFeedback(
+        transcript: String,
+        speechMetrics: SpeechTurnMetrics? = null,
+        recognitionAlternatives: List<RecognitionAlternative> = emptyList()
+    ) {
+        val metrics = speechMetrics ?: demoSpeechMetrics()
         val result = session.submitTurn(
             text = transcript,
-            durationMs = demoDurationFor(scenario.id),
-            asrConfidence = demoConfidenceFor(scenario.id)
+            durationMs = metrics.durationMs,
+            asrConfidence = metrics.asrConfidence,
+            recognitionAlternatives = recognitionAlternatives
         )
         uiState = PracticeUiState.speaking(
             scenario = scenario,
@@ -241,15 +276,23 @@ fun PracticeScreen(
         }
     }
 
-    fun showFeedback(transcriptOverride: String? = null) {
+    fun showFeedback(
+        transcriptOverride: String? = null,
+        speechMetrics: SpeechTurnMetrics? = null,
+        recognitionAlternatives: List<RecognitionAlternative> = emptyList()
+    ) {
+        if (backendState.isChecking) return
+
         val transcript = transcriptOverride?.takeIf { it.isNotBlank() }
             ?: uiState.transcript.ifBlank { demoTranscript }
-        val durationMs = demoDurationFor(scenario.id)
-        val asrConfidence = demoConfidenceFor(scenario.id)
+        val metrics = speechMetrics ?: demoSpeechMetrics()
+        val durationMs = metrics.durationMs
+        val asrConfidence = metrics.asrConfidence
+        val activeTurnIndex = session.turnCount
 
-        if (!backendState.shouldTryBackend) {
+        if (!backendState.shouldTryBackend || activeTurnIndex >= scenario.turns.size) {
             backendState = backendState.useLocalOnly()
-            submitLocalFeedback(transcript)
+            submitLocalFeedback(transcript, metrics, recognitionAlternatives)
             return
         }
 
@@ -264,9 +307,11 @@ fun PracticeScreen(
                         turnText = transcript,
                         durationMs = durationMs,
                         asrConfidence = asrConfidence,
-                        turnIndex = session.turnCount
+                        turnIndex = activeTurnIndex,
+                        recognitionAlternatives = recognitionAlternatives
                     )
                 )
+                if (session.turnCount != activeTurnIndex) return@launch
                 session.recordAnalyzedTurn(backendResult)
                 backendState = activeBackendState.withBackendSuccess(backendResult.source)
                 cloudErrorMessage = null
@@ -279,6 +324,7 @@ fun PracticeScreen(
                     textToSpeech.speak(backendResult.reply)
                 }
             } catch (error: Exception) {
+                if (session.turnCount != activeTurnIndex) return@launch
                 val failedState = activeBackendState.withBackendFailure(
                     error.message ?: "云端请求失败"
                 )
@@ -289,7 +335,7 @@ fun PracticeScreen(
                     "云端暂时不可用，请检查后端服务和设备连接。"
                 }
                 if (failedState.shouldUseLocalFallback) {
-                    submitLocalFeedback(transcript)
+                    submitLocalFeedback(transcript, metrics, recognitionAlternatives)
                 } else {
                     uiState = PracticeUiState.error(
                         scenario = scenario,
@@ -300,13 +346,18 @@ fun PracticeScreen(
         }
     }
 
-    fun submitRecognizedSpeech(transcript: String) {
+    fun submitRecognizedSpeech(
+        transcript: String,
+        speechMetrics: SpeechTurnMetrics,
+        recognitionAlternatives: List<RecognitionAlternative> = emptyList()
+    ) {
         if (transcript.isBlank()) return
         uiState = PracticeUiState.thinking(
             scenario = scenario,
-            transcript = transcript
+            transcript = transcript,
+            turnResult = uiState.turnResult
         )
-        showFeedback(transcript)
+        showFeedback(transcript, speechMetrics, recognitionAlternatives)
     }
 
     fun advancePrimary() {
@@ -314,12 +365,14 @@ fun PracticeScreen(
             PracticeState.Idle -> PracticeUiState.listening(scenario)
             PracticeState.Listening -> PracticeUiState.recognizing(
                 scenario = scenario,
-                transcript = demoTranscript
+                transcript = demoTranscript,
+                turnResult = uiState.turnResult
             )
 
             PracticeState.Recognizing -> PracticeUiState.thinking(
                 scenario = scenario,
-                transcript = uiState.transcript
+                transcript = uiState.transcript,
+                turnResult = uiState.turnResult
             )
 
             PracticeState.Thinking -> {
@@ -327,7 +380,10 @@ fun PracticeScreen(
                 return
             }
 
-            PracticeState.Speaking -> PracticeUiState.listening(scenario)
+            PracticeState.Speaking -> PracticeUiState.listening(
+                scenario = scenario,
+                turnResult = uiState.turnResult
+            )
             PracticeState.Finished -> {
                 restartScene()
                 return
@@ -337,7 +393,7 @@ fun PracticeScreen(
         }
     }
 
-    fun startSpeechInput(listenMode: SpeechListenMode = SpeechListenMode.Standard) {
+    fun startSpeechInput(listenMode: SpeechListenMode = SpeechListenMode.Extended) {
         if (!speechRecognizer.isAvailable()) {
             voiceState = voiceState.withRecognitionError("当前设备不可用语音识别。")
             return
@@ -348,39 +404,73 @@ fun PracticeScreen(
         }
 
         voiceState = voiceState.startSpeechFromCurrentMode(listenMode)
-        uiState = PracticeUiState.listening(scenario)
+        speechStartedAtMs = System.currentTimeMillis()
+        speechEndedAtMs = null
+        uiState = PracticeUiState.listening(
+            scenario = scenario,
+            turnResult = uiState.turnResult
+        )
         speechRecognizer.startListening(
             SpeechRecognitionCallbacks(
                 onReady = {
+                    speechStartedAtMs = System.currentTimeMillis()
+                    speechEndedAtMs = null
                     voiceState = voiceState.useSpeechMode().startListening(listenMode)
-                    uiState = PracticeUiState.listening(scenario)
+                    uiState = PracticeUiState.listening(
+                        scenario = scenario,
+                        turnResult = uiState.turnResult
+                    )
+                },
+                onSpeechStarted = {
+                    speechStartedAtMs = System.currentTimeMillis()
+                    speechEndedAtMs = null
+                },
+                onSpeechEnded = {
+                    speechEndedAtMs = System.currentTimeMillis()
                 },
                 onPartial = { text ->
                     if (text.isNotBlank()) {
                         voiceState = voiceState.withPartialTranscript(text)
                         uiState = PracticeUiState.recognizing(
                             scenario = scenario,
-                            transcript = text
+                            transcript = text,
+                            turnResult = uiState.turnResult
                         )
                     }
                 },
-                onFinal = { text ->
-                    val transcript = text.ifBlank { voiceState.bestTranscript }
+                onFinal = { result ->
+                    val transcript = result.transcript.ifBlank { voiceState.bestTranscript }
+                    val speechMetrics = actualSpeechMetrics(result.confidence)
+                    speechStartedAtMs = null
+                    speechEndedAtMs = null
                     voiceState = voiceState.withFinalTranscript(transcript)
                     if (transcript.isNotBlank()) {
-                        submitRecognizedSpeech(transcript)
+                        submitRecognizedSpeech(transcript, speechMetrics, result.alternatives)
                     }
                 },
                 onError = { message ->
+                    val recognizedTranscript = voiceState.bestTranscript
+                    val speechMetrics = actualSpeechMetrics(null)
+                    speechStartedAtMs = null
+                    speechEndedAtMs = null
                     voiceState = voiceState.withRecognitionError(message)
-                    uiState = PracticeUiState.error(
-                        scenario = scenario,
-                        message = "$message 可继续使用演示模式。"
-                    )
+                    if (recognizedTranscript.isNotBlank()) {
+                        submitRecognizedSpeech(recognizedTranscript, speechMetrics)
+                    } else {
+                        uiState = PracticeUiState.error(
+                            scenario = scenario,
+                            message = "$message 请再次点击麦克风重试，或切换演示模式。"
+                        )
+                    }
                 }
             ),
             listenMode = listenMode
         )
+    }
+
+    fun stopSpeechInput() {
+        isMicPressed = false
+        speechRecognizer.stopListening()
     }
 
     fun toggleVoiceMode() {
@@ -401,6 +491,46 @@ fun PracticeScreen(
         textToSpeech.speak(replyText(scenario.opening, uiState))
     }
 
+    fun finishWithSummary(summary: PracticeSummary) {
+        val durationLabel = durationLabelFor(System.currentTimeMillis() - practiceStartedAtMs)
+        summaryDurationLabel = durationLabel
+        val entry = PracticeHistoryEntry.fromSummary(
+            scenario = scenario,
+            summary = summary,
+            durationLabel = durationLabel
+        )
+        onSessionFinished(entry)
+        isFinishingSummary = false
+        uiState = PracticeUiState.finished(
+            scenario = scenario,
+            summary = summary
+        )
+    }
+
+    fun finishPractice() {
+        if (isFinishingSummary) return
+
+        val localSummary = session.finish()
+        if (!backendState.shouldTryBackend) {
+            finishWithSummary(localSummary)
+            return
+        }
+
+        isFinishingSummary = true
+        val summaryTurns = session.recordedTurns()
+        coroutineScope.launch {
+            val summary = runCatching {
+                summaryApiClient.summarize(
+                    SummaryPayload(
+                        scenarioId = scenario.id,
+                        turns = summaryTurns
+                    )
+                )
+            }.getOrElse { localSummary }
+            finishWithSummary(summary)
+        }
+    }
+
     val finishedSummary = uiState.summary
 
     StageScaffold {
@@ -408,6 +538,7 @@ fun PracticeScreen(
             EnhancedSummaryPage(
                 scenario = scenario,
                 summary = finishedSummary,
+                durationLabel = summaryDurationLabel,
                 onPracticeAgain = { restartScene() },
                 onBackHome = onBackHome,
                 modifier = Modifier.fillMaxSize()
@@ -420,31 +551,21 @@ fun PracticeScreen(
                 backendState = backendState,
                 conversationMessages = conversationMessages,
                 isMicPressed = isMicPressed,
+                enableMotion = enableMotion,
                 characterState = CoachCharacterState.from(
                     practiceState = uiState.phase,
                     isTtsSpeaking = voiceState.isTtsSpeaking
                 ),
                 onBackHome = onBackHome,
                 onPrimaryAction = { advancePrimary() },
-                onStartSpeech = { startSpeechInput() },
+                onStartSpeech = { startSpeechInput(SpeechListenMode.Extended) },
                 onStartLongSpeech = { startSpeechInput(SpeechListenMode.Extended) },
+                onStopSpeech = { stopSpeechInput() },
                 onMicPressChanged = { pressed -> isMicPressed = pressed },
                 onToggleVoiceMode = { toggleVoiceMode() },
                 onToggleTts = { voiceState = voiceState.setTtsEnabled(!voiceState.ttsEnabled) },
                 onSpeakCoach = { speakCoachText() },
-                onFinish = {
-                    val summary = session.finish()
-                    val entry = PracticeHistoryEntry.fromSummary(
-                        scenario = scenario,
-                        summary = summary,
-                        durationLabel = durationLabelFor(System.currentTimeMillis() - practiceStartedAtMs)
-                    )
-                    onSessionFinished(entry)
-                    uiState = PracticeUiState.finished(
-                        scenario = scenario,
-                        summary = summary
-                    )
-                }
+                onFinish = { finishPractice() }
             )
         }
 
@@ -465,11 +586,13 @@ private fun ImmersivePracticeStage(
     backendState: CoachBackendUiState,
     conversationMessages: List<ConversationMessage>,
     isMicPressed: Boolean,
+    enableMotion: Boolean,
     characterState: CoachCharacterState,
     onBackHome: () -> Unit,
     onPrimaryAction: () -> Unit,
     onStartSpeech: () -> Unit,
     onStartLongSpeech: () -> Unit,
+    onStopSpeech: () -> Unit,
     onMicPressChanged: (Boolean) -> Unit,
     onToggleVoiceMode: () -> Unit,
     onToggleTts: () -> Unit,
@@ -517,6 +640,7 @@ private fun ImmersivePracticeStage(
             ),
             isListening = voiceState.isListening || isMicPressed,
             uiState = uiState,
+            showWaveform = enableMotion,
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .padding(start = edge, top = if (compact) 58.dp else 68.dp, bottom = dockHeight + 16.dp)
@@ -536,14 +660,16 @@ private fun ImmersivePracticeStage(
                 .width(bubbleWidth)
         )
 
-        CoachCharacterPanel(
-            state = characterState,
-            showLabel = false,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = if (compact) 8.dp else 20.dp, bottom = dockHeight - 4.dp)
-                .size(avatarSize)
-        )
+        if (enableMotion) {
+            CoachCharacterPanel(
+                state = characterState,
+                showLabel = false,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = if (compact) 8.dp else 20.dp, bottom = dockHeight - 4.dp)
+                    .size(avatarSize)
+            )
+        }
 
         ScoreStrip(
             uiState = uiState,
@@ -560,6 +686,7 @@ private fun ImmersivePracticeStage(
             onPrimaryAction = onPrimaryAction,
             onStartSpeech = onStartSpeech,
             onStartLongSpeech = onStartLongSpeech,
+            onStopSpeech = onStopSpeech,
             onMicPressChanged = onMicPressChanged,
             onFinish = onFinish,
             modifier = Modifier
@@ -764,6 +891,7 @@ private fun ConversationHistoryCard(
     messages: List<ConversationMessage>,
     isListening: Boolean,
     uiState: PracticeUiState,
+    showWaveform: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -782,7 +910,7 @@ private fun ConversationHistoryCard(
             messages.forEach { message ->
                 ConversationMessageRow(message)
             }
-            if (isListening || uiState.phase == PracticeState.Recognizing) {
+            if (showWaveform && (isListening || uiState.phase == PracticeState.Recognizing)) {
                 AudioWaveformStrip(isActive = true)
             }
         }
@@ -993,6 +1121,7 @@ private fun BottomPracticeDock(
     onPrimaryAction: () -> Unit,
     onStartSpeech: () -> Unit,
     onStartLongSpeech: () -> Unit,
+    onStopSpeech: () -> Unit,
     onMicPressChanged: (Boolean) -> Unit,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier
@@ -1012,18 +1141,20 @@ private fun BottomPracticeDock(
         ) {
             StageDockButton(
                 text = if (backendState.isChecking) "分析中..." else uiState.primaryAction,
-                onClick = onPrimaryAction
+                onClick = onPrimaryAction,
+                modifier = Modifier.testTag("practice-primary-action")
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 HoldToTalkButton(
                     isActive = voiceInputActive,
-                    inputLocked = voiceState.isListening,
+                    isListening = voiceState.isListening,
                     onStartSpeech = onStartSpeech,
                     onStartLongSpeech = onStartLongSpeech,
+                    onStopSpeech = onStopSpeech,
                     onMicPressChanged = onMicPressChanged
                 )
                 Text(
-                    text = if (voiceInputActive) "正在说话中..." else "按住说话",
+                    text = if (voiceInputActive) "录音中，再次点击结束录音" else "点击开始录音",
                     color = Color.White,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.offset(y = (-2).dp)
@@ -1031,7 +1162,8 @@ private fun BottomPracticeDock(
             }
             StageDockButton(
                 text = if (uiState.canFinish) "结束本轮" else "跳过本轮",
-                onClick = if (uiState.canFinish) onFinish else onPrimaryAction
+                onClick = if (uiState.canFinish) onFinish else onPrimaryAction,
+                modifier = Modifier.testTag("practice-finish-action")
             )
         }
     }
@@ -1040,16 +1172,16 @@ private fun BottomPracticeDock(
 @Composable
 private fun HoldToTalkButton(
     isActive: Boolean,
-    inputLocked: Boolean,
+    isListening: Boolean,
     onStartSpeech: () -> Unit,
     onStartLongSpeech: () -> Unit,
+    onStopSpeech: () -> Unit,
     onMicPressChanged: (Boolean) -> Unit
 ) {
     Surface(
         modifier = Modifier
             .size(58.dp)
-            .pointerInput(inputLocked, onStartSpeech, onStartLongSpeech, onMicPressChanged) {
-                if (inputLocked) return@pointerInput
+            .pointerInput(isListening, onStartSpeech, onStartLongSpeech, onStopSpeech, onMicPressChanged) {
                 detectTapGestures(
                     onPress = {
                         onMicPressChanged(true)
@@ -1059,8 +1191,8 @@ private fun HoldToTalkButton(
                             onMicPressChanged(false)
                         }
                     },
-                    onTap = { onStartSpeech() },
-                    onLongPress = { onStartLongSpeech() }
+                    onTap = { if (isListening) onStopSpeech() else onStartSpeech() },
+                    onLongPress = { if (isListening) onStopSpeech() else onStartLongSpeech() }
                 )
             },
         color = if (isActive) Color(0xFF2F5FB8) else PracticeColors.Sky,
@@ -1088,12 +1220,14 @@ private fun HoldToTalkButton(
 @Composable
 private fun StageDockButton(
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = Modifier.pointerInput(text, onClick) {
-            detectTapGestures(onTap = { onClick() })
-        },
+        modifier = modifier
+            .pointerInput(text, onClick) {
+                detectTapGestures(onTap = { onClick() })
+            },
         color = Color.White.copy(alpha = 0.12f),
         contentColor = Color.White,
         shape = RoundedCornerShape(18.dp)
@@ -1200,11 +1334,12 @@ private fun PracticeHeader(
 private fun EnhancedSummaryPage(
     scenario: PracticeScenario,
     summary: PracticeSummary,
+    durationLabel: String,
     onPracticeAgain: () -> Unit,
     onBackHome: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = modifier.testTag("practice-summary-page"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1233,7 +1368,7 @@ private fun EnhancedSummaryPage(
                 SummaryInsightCard(title = "推荐表达", items = summary.practicePlan)
             }
             Column(modifier = Modifier.weight(0.82f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SummaryInsightCard(title = "本次场景", items = listOf(scenario.name, "练习时长 08:32", "${summary.turnCount} 轮完成"))
+                SummaryInsightCard(title = "本次场景", items = listOf(scenario.name, "练习时长 $durationLabel", "${summary.turnCount} 轮完成"))
                 GlassPanel(modifier = Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("下次目标", color = Color.White, fontWeight = FontWeight.Bold)
@@ -1294,8 +1429,7 @@ private fun SummaryScoreDashboard(
                     Text("${summary.averageScore}", color = Color.White, style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
                     Text("/100", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.padding(bottom = 8.dp))
                 }
-                Text("良好", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
-                Text("你超过了 72% 的学习者！", color = Color.White.copy(alpha = 0.76f))
+                Text(summaryStatusLabel(summary.averageScore), color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
             }
             Column(modifier = Modifier.weight(1.1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("能力雷达", color = Color.White, fontWeight = FontWeight.Bold)
@@ -1309,6 +1443,13 @@ private fun SummaryScoreDashboard(
             }
         }
     }
+}
+
+private fun summaryStatusLabel(score: Int): String = when (score.coerceIn(0, 100)) {
+    in 90..100 -> "优秀"
+    in 75..89 -> "良好"
+    in 60..74 -> "继续加油"
+    else -> "需要巩固"
 }
 
 @Composable
@@ -1374,20 +1515,20 @@ private fun newPracticeSession(scenario: PracticeScenario): PracticeSession = Pr
 ).also { session -> session.start() }
 
 private fun replyText(opening: String, uiState: PracticeUiState): String = when (uiState.phase) {
-    PracticeState.Idle,
+    PracticeState.Idle -> opening
     PracticeState.Listening,
-    PracticeState.Recognizing -> opening
+    PracticeState.Recognizing -> uiState.turnResult?.reply ?: opening
 
     PracticeState.Thinking -> "请稍等，教练正在分析你的回答。"
     PracticeState.Speaking -> uiState.turnResult?.reply ?: opening
     PracticeState.Finished -> "本次练习已完成，请查看总结。"
-    PracticeState.Error -> "恢复练习后，可继续当前场景。"
+    PracticeState.Error -> opening
 }
 
 private fun replyTranslationText(openingTranslation: String, uiState: PracticeUiState): String = when (uiState.phase) {
-    PracticeState.Idle,
+    PracticeState.Idle -> openingTranslation
     PracticeState.Listening,
-    PracticeState.Recognizing -> openingTranslation
+    PracticeState.Recognizing -> uiState.turnResult?.replyTranslation ?: openingTranslation
 
     PracticeState.Speaking -> uiState.turnResult?.replyTranslation.orEmpty()
     else -> ""
@@ -1414,6 +1555,11 @@ private fun durationLabelFor(durationMs: Long): String {
     val seconds = totalSeconds % 60
     return "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 }
+
+private data class SpeechTurnMetrics(
+    val durationMs: Int,
+    val asrConfidence: Float?
+)
 
 private fun conversationMessagesFor(
     baseMessages: List<ConversationMessage>,
@@ -1456,6 +1602,7 @@ private fun android.content.Context.hasRecordAudioPermission(): Boolean =
     checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
 private fun CoachFeedbackSource.label(): String = when (this) {
+    CoachFeedbackSource.DeepSeek -> "DeepSeek"
     CoachFeedbackSource.BackendApi -> "云端教练"
     CoachFeedbackSource.BackendRule -> "云端规则"
     CoachFeedbackSource.LanguageTool -> "LanguageTool"

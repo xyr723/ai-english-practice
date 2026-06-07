@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 
 from app.schemas import CoachAnalyzeRequest, GrammarCheckRequest, SummaryRequest
 from app.services.correction import check_text, create_language_tool_checker
+from app.services.llm import create_deepseek_coach_client
 from app.services.scenarios import (
     list_scenarios,
     load_scenario,
@@ -14,6 +15,7 @@ from app.services.summary import summarize_practice
 
 app = FastAPI(title="AI English Practice API")
 LANGUAGE_TOOL_CHECKER = create_language_tool_checker()
+DEEPSEEK_COACH_CLIENT = create_deepseek_coach_client()
 
 
 @app.get("/health")
@@ -52,6 +54,46 @@ def coach_analyze(request: CoachAnalyzeRequest):
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Scenario not found") from exc
 
+    fallback = _rule_based_analysis(request, scenario)
+    if DEEPSEEK_COACH_CLIENT is None:
+        return fallback
+
+    try:
+        deepseek_result = DEEPSEEK_COACH_CLIENT.analyze(scenario, request, fallback)
+    except Exception:
+        return fallback
+
+    return {
+        **fallback,
+        **deepseek_result,
+        "source": "DEEPSEEK",
+    }
+
+
+@app.post("/summary")
+def summary(request: SummaryRequest):
+    try:
+        scenario = load_scenario(request.scenarioId)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Scenario not found") from exc
+
+    fallback = summarize_practice(request.turns, scenario=scenario)
+    if DEEPSEEK_COACH_CLIENT is None:
+        return fallback
+
+    try:
+        deepseek_result = DEEPSEEK_COACH_CLIENT.summarize(scenario, request, fallback)
+    except Exception:
+        return {**fallback, "source": "RULE_FALLBACK"}
+
+    return {
+        **fallback,
+        **deepseek_result,
+        "source": "DEEPSEEK",
+    }
+
+
+def _rule_based_analysis(request: CoachAnalyzeRequest, scenario):
     correction = check_text(
         request.turnText,
         scenario_id=request.scenarioId,
@@ -69,6 +111,7 @@ def coach_analyze(request: CoachAnalyzeRequest):
         spelling_issue_count=spelling_issue_count,
         matched_goals=len(goals),
         total_goals=len(scenario.get("goals", [])),
+        recognition_alternatives=request.recognitionAlternatives,
     )
 
     return {
@@ -81,13 +124,13 @@ def coach_analyze(request: CoachAnalyzeRequest):
     }
 
 
-@app.post("/summary")
-def summary(request: SummaryRequest):
-    return summarize_practice(request.turns)
-
-
 def _issue_counts(issues):
     spelling_issue_count = sum(
         1 for issue in issues if isinstance(issue, dict) and issue.get("type") == "spelling"
     )
-    return len(issues) - spelling_issue_count, spelling_issue_count
+    grammar_issue_count = sum(
+        1
+        for issue in issues
+        if isinstance(issue, dict) and issue.get("type") not in ("scenario", "spelling")
+    )
+    return grammar_issue_count, spelling_issue_count

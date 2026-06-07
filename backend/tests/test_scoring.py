@@ -34,3 +34,23 @@ def test_score_turn_handles_empty_duration_and_goal_counts():
     assert scores["pronunciation"]["score"] == 0
     assert scores["completion"]["score"] == 0
 
+
+def test_score_turn_uses_recognition_stability_for_pronunciation():
+    scores = score_turn(
+        word_count=6,
+        duration_ms=6000,
+        asr_confidence=0.82,
+        grammar_issue_count=0,
+        spelling_issue_count=0,
+        matched_goals=2,
+        total_goals=3,
+        recognition_alternatives=[
+            {"transcript": "I want to order a coffee", "confidence": 0.82},
+            {"transcript": "I want to order a copy", "confidence": 0.58},
+            {"transcript": "I want order coffee", "confidence": 0.45},
+        ],
+    )
+
+    assert scores["pronunciation"]["score"] == 74
+    assert "candidate stability" in scores["pronunciation"]["reason"]
+    assert "coffee" in scores["pronunciation"]["reason"]

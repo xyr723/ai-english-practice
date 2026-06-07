@@ -112,6 +112,24 @@ class PracticeHistoryStore(private val storage: PracticeHistoryStorage? = null) 
     fun completedTodayCount(todayEpochDay: Long = currentEpochDay()): Int =
         entries.count { entry -> entry.completedAtEpochDay == todayEpochDay }
 
+    fun streakDays(todayEpochDay: Long = currentEpochDay()): Int {
+        val practicedDays = entries
+            .map { entry -> entry.completedAtEpochDay }
+            .filter { epochDay -> epochDay > 0L }
+            .toSet()
+        if (practicedDays.isEmpty()) return 0
+
+        var cursor = if (todayEpochDay in practicedDays) todayEpochDay else todayEpochDay - 1
+        if (cursor !in practicedDays) return 0
+
+        var streak = 0
+        while (cursor in practicedDays) {
+            streak += 1
+            cursor -= 1
+        }
+        return streak
+    }
+
     fun clear() {
         entries.clear()
         storage?.clear()

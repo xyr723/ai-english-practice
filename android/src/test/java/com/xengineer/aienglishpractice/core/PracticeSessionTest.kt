@@ -27,6 +27,7 @@ class PracticeSessionTest {
         assertEquals(84, result.scores.grammar.score)
         assertEquals(80, result.scores.pronunciation.score)
         assertTrue(result.tips.isNotEmpty())
+        assertTrue(result.tips.any { it.contains("堂食") })
     }
 
     @Test
@@ -46,6 +47,24 @@ class PracticeSessionTest {
 
         assertEquals("Great. Is that for here or takeaway?", result.reply)
         assertEquals("好的。是在这里吃还是外带？", result.replyTranslation)
+    }
+
+    @Test
+    fun restaurantReplyDoesNotFallBackToSayThatAgainAfterScriptedTurns() {
+        val session = PracticeSession(
+            scenario = PracticeScenario.restaurant(),
+            correctionEngine = RuleCorrectionEngine(),
+            scoreEngine = ScoreEngine()
+        )
+
+        session.start()
+        session.submitTurn("I want order a coffee", durationMs = 6000, asrConfidence = 0.8f)
+        session.submitTurn("A tea please", durationMs = 4200, asrConfidence = 0.9f)
+        session.submitTurn("For here please", durationMs = 4000, asrConfidence = 0.9f)
+        val result = session.submitTurn("Thank you", durationMs = 3000, asrConfidence = 0.9f)
+
+        assertEquals("Great. That completes this practice. Try one more answer with a specific detail.", result.reply)
+        assertEquals("很好。本次练习已完成。下一次回答时再补充一个具体细节。", result.replyTranslation)
     }
 
     @Test
@@ -75,13 +94,38 @@ class PracticeSessionTest {
     }
 
     @Test
+    fun recordedTurnsExposeCompletedTurnsForBackendSummary() {
+        val session = PracticeSession(
+            scenario = PracticeScenario.restaurant(),
+            correctionEngine = RuleCorrectionEngine(),
+            scoreEngine = ScoreEngine()
+        )
+
+        session.start()
+        val result = session.submitTurn("I want order a coffee", durationMs = 6000, asrConfidence = 0.8f)
+
+        assertEquals(listOf(result), session.recordedTurns())
+    }
+
+    @Test
     fun localCorrectionFixesCommonVerbAgreementWithoutOnlyAppendingPlease() {
         val result = RuleCorrectionEngine().check(
-            text = "I has a question",
+            text = "I has a risk question",
             scenario = PracticeScenario.meeting()
         )
 
-        assertEquals("I have a question.", result.betterExpression)
+        assertEquals("I have a risk question.", result.betterExpression)
         assertTrue(result.issues.any { it.type == "grammar" })
+    }
+
+    @Test
+    fun localCorrectionAddsAirportScenarioGuidanceBeyondPlease() {
+        val result = RuleCorrectionEngine().check(
+            text = "I need to change my flight, please",
+            scenario = CustomScenarioFactory.fromPrompt("机场改签")
+        )
+
+        assertTrue(result.betterExpression.contains("flight number", ignoreCase = true))
+        assertTrue(result.issues.any { it.type == "scenario" && it.message.contains("航班号") })
     }
 }

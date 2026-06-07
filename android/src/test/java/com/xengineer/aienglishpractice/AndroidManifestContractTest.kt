@@ -19,4 +19,14 @@ class AndroidManifestContractTest {
 
         assertTrue(manifest.contains("android:usesCleartextTraffic=\"true\""))
     }
+
+    @Test
+    fun declaresComposeUiTestDependenciesForInstrumentedSmokeTests() {
+        val buildFile = File("build.gradle.kts").readText()
+
+        assertTrue(buildFile.contains("androidx.compose.ui:ui-test-junit4"))
+        assertTrue(buildFile.contains("androidx.compose.ui:ui-test-manifest"))
+        assertTrue(buildFile.contains("androidx.test.ext:junit"))
+        assertTrue(buildFile.contains("androidx.test.uiautomator:uiautomator"))
+    }
 }
