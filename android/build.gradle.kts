@@ -42,6 +42,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("com.airbnb.android:lottie-compose:6.7.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 
