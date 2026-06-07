@@ -96,4 +96,18 @@ class VoiceUiStateTest {
         assertFalse(state.ttsEnabled)
         assertEquals("打开朗读", state.ttsAction)
     }
+
+    @Test
+    fun ttsPlaybackStateCanDriveCharacterSpeakingAnimation() {
+        val state = VoiceUiState.initial(
+            recognizerAvailable = true,
+            audioPermissionGranted = true
+        )
+
+        val speaking = state.setTtsSpeaking(true)
+        val idle = speaking.setTtsSpeaking(false)
+
+        assertTrue(speaking.isTtsSpeaking)
+        assertFalse(idle.isTtsSpeaking)
+    }
 }
