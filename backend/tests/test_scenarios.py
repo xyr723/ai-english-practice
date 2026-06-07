@@ -19,6 +19,15 @@ def test_next_reply_uses_scripted_turn_order():
     )
 
 
+def test_next_reply_does_not_repeat_say_that_again_after_scripted_turns():
+    scenario = load_scenario("restaurant")
+
+    assert (
+        next_reply(scenario, "Thank you.", turn_index=len(scenario["turns"]))
+        == "Great. That completes this practice. Try one more answer with a specific detail."
+    )
+
+
 def test_matched_goals_detects_ordering_and_politeness():
     scenario = load_scenario("restaurant")
 

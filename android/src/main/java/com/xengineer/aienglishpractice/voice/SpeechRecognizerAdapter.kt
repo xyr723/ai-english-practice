@@ -109,8 +109,8 @@ private val SpeechListenMode.possiblyCompleteSilenceMillis: Int
 
 private val SpeechListenMode.minimumLengthMillis: Int
     get() = when (this) {
-        SpeechListenMode.Standard -> 5000
-        SpeechListenMode.Extended -> 15000
+        SpeechListenMode.Standard -> 1200
+        SpeechListenMode.Extended -> 4000
     }
 
 data class SpeechRecognitionCallbacks(

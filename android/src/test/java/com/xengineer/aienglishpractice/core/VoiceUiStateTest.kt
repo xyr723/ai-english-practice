@@ -73,16 +73,16 @@ class VoiceUiStateTest {
     }
 
     @Test
-    fun recognitionErrorFallsBackToRecoverableDemoMode() {
+    fun recognitionErrorKeepsSpeechModeWhenCapabilitiesAreReady() {
         val state = VoiceUiState.initial(
             recognizerAvailable = true,
             audioPermissionGranted = true
         ).useSpeechMode().startListening().withRecognitionError("No speech detected.")
 
-        assertEquals(VoiceInputMode.DemoFallback, state.mode)
+        assertEquals(VoiceInputMode.SpeechRecognizer, state.mode)
         assertFalse(state.isListening)
         assertTrue(state.errorMessage.orEmpty().contains("No speech"))
-        assertEquals("语音模式", state.modeAction)
+        assertEquals("演示模式", state.modeAction)
     }
 
     @Test

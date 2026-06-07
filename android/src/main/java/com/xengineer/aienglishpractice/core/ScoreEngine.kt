@@ -10,7 +10,7 @@ class ScoreEngine {
         totalGoals: Int
     ): ScoreBundle {
         val wordCount = text.split(Regex("\\s+")).filter { it.isNotBlank() }.size
-        val issueCount = correction.issues.size
+        val issueCount = correction.issues.count { issue -> issue.type != "scenario" }
 
         return ScoreBundle(
             grammar = ScoreDetail(

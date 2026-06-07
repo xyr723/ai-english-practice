@@ -173,6 +173,24 @@ class PracticeScreenContractTest {
     }
 
     @Test
+    fun speechErrorDoesNotReplaceCoachDialogueWithRecoveryCopy() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("PracticeState.Error -> opening"))
+        assertFalse(source.contains("恢复练习后，可继续当前场景。"))
+    }
+
+    @Test
+    fun speechRecognitionErrorNeverSubmitsFixedDemoTranscript() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("val recognizedTranscript = voiceState.bestTranscript"))
+        assertTrue(source.contains("submitRecognizedSpeech(recognizedTranscript)"))
+        assertFalse(source.contains("val fallbackTranscript = demoTranscript"))
+        assertFalse(source.contains("showFeedback(fallbackTranscript)"))
+    }
+
+    @Test
     fun speechFinalResultAutomaticallySubmitsForCoachFeedback() {
         val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
 

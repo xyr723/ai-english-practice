@@ -90,4 +90,9 @@ def _issue_counts(issues):
     spelling_issue_count = sum(
         1 for issue in issues if isinstance(issue, dict) and issue.get("type") == "spelling"
     )
-    return len(issues) - spelling_issue_count, spelling_issue_count
+    grammar_issue_count = sum(
+        1
+        for issue in issues
+        if isinstance(issue, dict) and issue.get("type") not in ("scenario", "spelling")
+    )
+    return grammar_issue_count, spelling_issue_count

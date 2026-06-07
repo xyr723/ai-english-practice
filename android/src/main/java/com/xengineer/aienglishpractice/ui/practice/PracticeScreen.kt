@@ -372,11 +372,16 @@ fun PracticeScreen(
                     }
                 },
                 onError = { message ->
+                    val recognizedTranscript = voiceState.bestTranscript
                     voiceState = voiceState.withRecognitionError(message)
-                    uiState = PracticeUiState.error(
-                        scenario = scenario,
-                        message = "$message 可继续使用演示模式。"
-                    )
+                    if (recognizedTranscript.isNotBlank()) {
+                        submitRecognizedSpeech(recognizedTranscript)
+                    } else {
+                        uiState = PracticeUiState.error(
+                            scenario = scenario,
+                            message = "$message 请再按住说话重试，或切换演示模式。"
+                        )
+                    }
                 }
             ),
             listenMode = listenMode
@@ -1381,7 +1386,7 @@ private fun replyText(opening: String, uiState: PracticeUiState): String = when 
     PracticeState.Thinking -> "请稍等，教练正在分析你的回答。"
     PracticeState.Speaking -> uiState.turnResult?.reply ?: opening
     PracticeState.Finished -> "本次练习已完成，请查看总结。"
-    PracticeState.Error -> "恢复练习后，可继续当前场景。"
+    PracticeState.Error -> opening
 }
 
 private fun replyTranslationText(openingTranslation: String, uiState: PracticeUiState): String = when (uiState.phase) {

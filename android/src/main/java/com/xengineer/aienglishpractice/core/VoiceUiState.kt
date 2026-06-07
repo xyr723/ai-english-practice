@@ -124,7 +124,11 @@ data class VoiceUiState(
     )
 
     fun withRecognitionError(message: String): VoiceUiState = copy(
-        mode = VoiceInputMode.DemoFallback,
+        mode = if (recognizerAvailable && audioPermissionGranted) {
+            VoiceInputMode.SpeechRecognizer
+        } else {
+            VoiceInputMode.DemoFallback
+        },
         isListening = false,
         listenMode = SpeechListenMode.Standard,
         isTtsSpeaking = false,
