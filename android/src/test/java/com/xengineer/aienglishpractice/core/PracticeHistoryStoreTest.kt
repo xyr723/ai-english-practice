@@ -3,6 +3,7 @@ package com.xengineer.aienglishpractice.core
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class PracticeHistoryStoreTest {
     @Test
@@ -35,15 +36,54 @@ class PracticeHistoryStoreTest {
             id = "entry-interview",
             scenario = scenario,
             summary = summary,
-            completedAtLabel = "今天 10:00"
+            completedAtLabel = "今天 10:00",
+            durationLabel = "03:25"
         )
 
         assertEquals("entry-interview", entry.id)
         assertEquals("interview", entry.scenarioId)
         assertEquals("面试练习", entry.scenarioName)
         assertEquals("今天 10:00", entry.completedAtLabel)
+        assertEquals("03:25", entry.durationLabel)
+        assertTrue(entry.completedAtEpochDay > 0L)
         assertEquals(91, entry.averageScore)
         assertEquals(summary, entry.toSummary())
+        assertEquals(listOf("语法", "流利度", "发音", "完成度", "词汇"), entry.toSummary().scoreBreakdown.map { it.label })
+    }
+
+    @Test
+    fun entryFromSummaryBuildsDateLabelFromCompletedDayWhenNoLabelIsProvided() {
+        val yesterdayEpochDay = LocalDate.now().minusDays(1).toEpochDay()
+
+        val entry = PracticeHistoryEntry.fromSummary(
+            id = "entry-yesterday",
+            scenario = PracticeScenario.restaurant(),
+            summary = summary(),
+            completedAtEpochDay = yesterdayEpochDay
+        )
+
+        assertEquals("昨天", entry.completedAtLabel)
+    }
+
+    @Test
+    fun oldHistoryEntryWithoutBreakdownGetsFiveRadarFallbackScores() {
+        val entry = PracticeHistoryEntry(
+            id = "legacy",
+            scenarioId = "restaurant",
+            scenarioName = "餐厅点餐",
+            completedAtLabel = "刚刚",
+            turnCount = 1,
+            averageScore = 76,
+            strengths = listOf("已完成练习。"),
+            improvements = listOf("继续练习。"),
+            nextGoal = "重复同一场景。"
+        )
+
+        val summary = entry.toSummary()
+
+        assertEquals(5, summary.scoreBreakdown.size)
+        assertEquals(listOf("语法", "流利度", "发音", "完成度", "词汇"), summary.scoreBreakdown.map { it.label })
+        assertEquals(listOf(76, 76, 76, 76, 76), summary.scoreBreakdown.map { it.score })
     }
 
     @Test
@@ -60,13 +100,26 @@ class PracticeHistoryStoreTest {
     @Test
     fun recordPersistsHistoryAcrossStoreInstances() {
         val storage = FakePracticeHistoryStorage()
-        val entry = historyEntry(id = "entry-persisted", scenario = PracticeScenario.restaurant())
+        val entry = historyEntry(id = "entry-persisted", scenario = PracticeScenario.restaurant(), durationLabel = "02:18")
 
         PracticeHistoryStore(storage).record(entry)
         val restoredStore = PracticeHistoryStore(storage)
 
         assertEquals(listOf(entry), restoredStore.recent())
+        assertEquals("02:18", restoredStore.latest()?.durationLabel)
+        assertEquals(entry.completedAtEpochDay, restoredStore.latest()?.completedAtEpochDay)
         assertTrue(storage.savedValue?.contains("entry-persisted") == true)
+    }
+
+    @Test
+    fun completedTodayCountOnlyCountsEntriesFromGivenDay() {
+        val store = PracticeHistoryStore()
+        store.record(historyEntry(id = "yesterday", scenario = PracticeScenario.restaurant(), completedAtEpochDay = 100L))
+        store.record(historyEntry(id = "today-1", scenario = PracticeScenario.restaurant(), completedAtEpochDay = 101L))
+        store.record(historyEntry(id = "today-2", scenario = PracticeScenario.meeting(), completedAtEpochDay = 101L))
+
+        assertEquals(2, store.completedTodayCount(todayEpochDay = 101L))
+        assertEquals(1, store.completedTodayCount(todayEpochDay = 100L))
     }
 
     @Test
@@ -100,6 +153,7 @@ class PracticeHistoryStoreTest {
         val dashboard = HomeDashboard.default(historyStore = store)
 
         assertEquals(3, dashboard.practiceStats.completedTurns)
+        assertEquals(2, dashboard.practiceStats.todayCompletedSessions)
         assertEquals("meeting", dashboard.recentHistory?.scenarioId)
         assertEquals(2, dashboard.recentSummary?.turnCount)
     }
@@ -108,12 +162,16 @@ class PracticeHistoryStoreTest {
         id: String,
         scenario: PracticeScenario,
         averageScore: Int = 82,
-        turnCount: Int = 1
+        turnCount: Int = 1,
+        durationLabel: String = "03:25",
+        completedAtEpochDay: Long = java.time.LocalDate.now().toEpochDay()
     ): PracticeHistoryEntry = PracticeHistoryEntry.fromSummary(
         id = id,
         scenario = scenario,
         summary = summary(averageScore = averageScore, turnCount = turnCount),
-        completedAtLabel = "刚刚"
+        completedAtLabel = "刚刚",
+        durationLabel = durationLabel,
+        completedAtEpochDay = completedAtEpochDay
     )
 
     private fun summary(
@@ -125,7 +183,14 @@ class PracticeHistoryStoreTest {
         averageScore = averageScore,
         strengths = listOf("已完成练习流程。"),
         improvements = listOf("复习优化表达。"),
-        nextGoal = nextGoal
+        nextGoal = nextGoal,
+        scoreBreakdown = listOf(
+            SummaryScoreBreakdown("语法", averageScore, "测试分数。"),
+            SummaryScoreBreakdown("流利度", averageScore, "测试分数。"),
+            SummaryScoreBreakdown("发音", averageScore, "测试分数。"),
+            SummaryScoreBreakdown("完成度", averageScore, "测试分数。"),
+            SummaryScoreBreakdown("词汇", averageScore, "测试分数。")
+        )
     )
 
     private class FakePracticeHistoryStorage(initialValue: String? = null) : PracticeHistoryStorage {

@@ -7,6 +7,7 @@ sealed interface AppRoute {
     data object Settings : AppRoute
     data class ScenarioDetail(val scenarioId: String) : AppRoute
     data class Practice(val scenarioId: String) : AppRoute
+    data class HistoryReview(val entryId: String) : AppRoute
 }
 
 class AppNavigator(initialRoute: AppRoute = AppRoute.Home) {
@@ -27,6 +28,10 @@ class AppNavigator(initialRoute: AppRoute = AppRoute.Home) {
 
     fun openHistory() {
         currentRoute = AppRoute.History
+    }
+
+    fun openHistoryReview(entryId: String) {
+        currentRoute = AppRoute.HistoryReview(entryId)
     }
 
     fun openSettings() {

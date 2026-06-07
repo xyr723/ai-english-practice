@@ -16,6 +16,7 @@ data class HomeDashboard(
                 practiceStats = PracticeStats(
                     todayGoalMinutes = 12,
                     completedTurns = historyStore.totalTurns(),
+                    todayCompletedSessions = historyStore.completedTodayCount(),
                     streakDays = 1
                 ),
                 quickActions = listOf(
@@ -33,6 +34,7 @@ data class HomeDashboard(
 data class PracticeStats(
     val todayGoalMinutes: Int,
     val completedTurns: Int,
+    val todayCompletedSessions: Int,
     val streakDays: Int
 )
 

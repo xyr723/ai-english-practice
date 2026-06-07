@@ -1,5 +1,7 @@
 package com.xengineer.aienglishpractice.ui.shared
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +24,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.xengineer.aienglishpractice.R
 import com.xengineer.aienglishpractice.ui.theme.PracticeColors
+
+private val FrostedPanelTint = Color(0xC4302018)
+private val FrostedPanelHighlight = Color.White.copy(alpha = 0.07f)
+private val FrostedPanelBorder = Color.White.copy(alpha = 0.16f)
+private val FrostedLightPanelTint = Color(0xDFF7F2EA)
+private val FrostedLightPanelHighlight = Color.White.copy(alpha = 0.16f)
 
 @Composable
 fun StageScaffold(content: @Composable () -> Unit) {
@@ -34,7 +45,65 @@ fun StageScaffold(content: @Composable () -> Unit) {
             .background(PracticeColors.StageBrush)
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
+        Image(
+            painter = painterResource(R.drawable.bg_restaurant_photo),
+            contentDescription = null,
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.Crop
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color.Black.copy(alpha = 0.22f))
+        )
         content()
+    }
+}
+
+@Composable
+fun GlassPanel(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = modifier,
+        color = FrostedPanelTint,
+        contentColor = Color.White,
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, FrostedPanelBorder),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp
+    ) {
+        Box(
+            Modifier
+                .background(FrostedPanelHighlight)
+                .padding(14.dp)
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+fun GlassAction(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.pointerInput(text, onClick) {
+            detectTapGestures(onTap = { onClick() })
+        },
+        color = Color.White.copy(alpha = 0.13f),
+        contentColor = Color.White,
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+            color = Color.White,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -45,13 +114,16 @@ fun LightPanel(
 ) {
     Surface(
         modifier = modifier,
-        color = PracticeColors.WhitePanel,
+        color = FrostedLightPanelTint,
+        contentColor = PracticeColors.Ink,
         shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.32f)),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
         Box(
             Modifier
+                .background(FrostedLightPanelHighlight)
                 .padding(14.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -67,13 +139,15 @@ fun DarkPanel(
 ) {
     Surface(
         modifier = modifier,
-        color = PracticeColors.DarkPanel,
+        color = FrostedPanelTint,
         shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, FrostedPanelBorder),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
         Box(
             Modifier
+                .background(FrostedPanelHighlight)
                 .padding(14.dp)
                 .verticalScroll(rememberScrollState())
         ) {

@@ -9,17 +9,21 @@ import androidx.compose.ui.platform.LocalContext
 import com.xengineer.aienglishpractice.core.AppNavigator
 import com.xengineer.aienglishpractice.core.AppRoute
 import com.xengineer.aienglishpractice.core.AppSettingsStore
+import com.xengineer.aienglishpractice.core.CustomScenarioFactory
 import com.xengineer.aienglishpractice.core.HomeDashboard
 import com.xengineer.aienglishpractice.core.PracticeHistoryStore
+import com.xengineer.aienglishpractice.core.PracticeScenario
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.core.SharedPreferencesAppSettingsStorage
 import com.xengineer.aienglishpractice.core.SharedPreferencesPracticeHistoryStorage
 import com.xengineer.aienglishpractice.ui.history.HistoryScreen
+import com.xengineer.aienglishpractice.ui.history.HistoryReviewScreen
 import com.xengineer.aienglishpractice.ui.home.HomeScreen
 import com.xengineer.aienglishpractice.ui.practice.PracticeScreen
 import com.xengineer.aienglishpractice.ui.scenario.ScenarioDetailScreen
 import com.xengineer.aienglishpractice.ui.scenario.ScenarioListScreen
 import com.xengineer.aienglishpractice.ui.settings.CoachSettingsScreen
+import com.xengineer.aienglishpractice.ui.shared.PlaceholderScreen
 
 @Composable
 fun AppRoot() {
@@ -33,6 +37,7 @@ fun AppRoot() {
     var historyRevision by remember { mutableStateOf(0) }
     var endpointConfig by remember { mutableStateOf(persistedSettings.endpointConfig) }
     var engineSelectionConfig by remember { mutableStateOf(persistedSettings.engineSelectionConfig) }
+    var customScenarios by remember { mutableStateOf(emptyList<PracticeScenario>()) }
     val historyStore = remember(context) {
         PracticeHistoryStore(SharedPreferencesPracticeHistoryStorage(context.applicationContext))
     }
@@ -42,12 +47,24 @@ fun AppRoot() {
         route = navigator.currentRoute
     }
 
+    fun scenarioById(scenarioId: String): PracticeScenario =
+        customScenarios.firstOrNull { it.id == scenarioId }
+            ?: ScenarioCatalog.findById(scenarioId)
+            ?: ScenarioCatalog.recommended()
+
+    fun createCustomScenario(prompt: String) {
+        val scenario = CustomScenarioFactory.fromPrompt(prompt)
+        customScenarios = listOf(scenario) + customScenarios.filterNot { it.id == scenario.id }
+        navigate { startPractice(scenario.id) }
+    }
+
     when (val current = route) {
         AppRoute.Home -> {
             historyRevision
             HomeScreen(
                 dashboard = HomeDashboard.default(historyStore = historyStore),
                 onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
+                onCreateCustomScenario = { prompt -> createCustomScenario(prompt) },
                 onOpenScenarios = { navigate { openScenarios() } },
                 onOpenHistory = { navigate { openHistory() } },
                 onOpenSettings = { navigate { openSettings() } }
@@ -56,6 +73,7 @@ fun AppRoot() {
 
         is AppRoute.Practice -> PracticeScreen(
             scenarioId = current.scenarioId,
+            scenarioOverride = customScenarios.firstOrNull { it.id == current.scenarioId },
             coachBaseUrl = endpointConfig.baseUrl,
             engineSelectionConfig = engineSelectionConfig,
             onBackHome = { navigate { goHome() } },
@@ -66,13 +84,14 @@ fun AppRoot() {
         )
 
         AppRoute.Scenarios -> ScenarioListScreen(
-            scenarios = ScenarioCatalog.all(),
+            scenarios = customScenarios + ScenarioCatalog.all(),
             onOpenDetail = { scenarioId -> navigate { openScenarioDetail(scenarioId) } },
+            onCreateCustomScenario = { prompt -> createCustomScenario(prompt) },
             onBackHome = { navigate { goHome() } }
         )
 
         is AppRoute.ScenarioDetail -> ScenarioDetailScreen(
-            scenario = ScenarioCatalog.findById(current.scenarioId) ?: ScenarioCatalog.recommended(),
+            scenario = scenarioById(current.scenarioId),
             onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
             onBackList = { navigate { openScenarios() } }
         )
@@ -82,12 +101,31 @@ fun AppRoot() {
             HistoryScreen(
                 entries = historyStore.recent(),
                 onStartPractice = { scenarioId -> navigate { startPractice(scenarioId) } },
+                onOpenReview = { entryId -> navigate { openHistoryReview(entryId) } },
                 onClearHistory = {
                     historyStore.clear()
                     historyRevision += 1
                 },
                 onBackHome = { navigate { goHome() } }
             )
+        }
+
+        is AppRoute.HistoryReview -> {
+            historyRevision
+            val entry = historyStore.recent().firstOrNull { it.id == current.entryId }
+            if (entry != null) {
+                HistoryReviewScreen(
+                    entry = entry,
+                    onBackHistory = { navigate { openHistory() } }
+                )
+            } else {
+                PlaceholderScreen(
+                    title = "记录不存在",
+                    body = "这条练习记录可能已经被清空。",
+                    action = "返回历史",
+                    onAction = { navigate { openHistory() } }
+                )
+            }
         }
 
         AppRoute.Settings -> CoachSettingsScreen(
