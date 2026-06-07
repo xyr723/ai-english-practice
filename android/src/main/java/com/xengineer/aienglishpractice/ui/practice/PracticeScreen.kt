@@ -591,7 +591,7 @@ private fun SceneBackgroundImage(
     )
 }
 
-private fun backgroundDrawableFor(descriptor: SceneDescriptor): Int? = when (descriptor.theme) {
+private fun backgroundDrawableFor(descriptor: SceneDescriptor): Int? = when (descriptor.visualTheme) {
     "restaurant" -> R.drawable.bg_restaurant_photo
     "airport" -> R.drawable.bg_airport_photo
     "office" -> R.drawable.bg_office_photo
