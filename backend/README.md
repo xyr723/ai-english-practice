@@ -28,6 +28,17 @@ adb reverse tcp:8000 tcp:8000
 
 然后在 App 设置页输入 `http://<电脑局域网 IP>:8000`。
 
+## LanguageTool 增强纠错
+
+默认未配置外部服务时，后端使用本地规则纠错并返回 `source=RULE_ONLY`。如需启用 LanguageTool，在启动后端前配置检查接口：
+
+```bash
+export LANGUAGETOOL_URL=https://api.languagetool.org/v2/check
+export LANGUAGETOOL_TIMEOUT_SECONDS=1.2
+```
+
+LanguageTool 调用成功时返回 `source=LANGUAGE_TOOL`；超时或异常时接口不中断，返回本地规则结果并标记 `source=RULE_FALLBACK`，Android 端会展示对应来源。
+
 ## 测试
 
 ```bash

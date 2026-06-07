@@ -23,6 +23,7 @@ class PracticeSessionTest {
         assertEquals(PracticeState.Speaking, session.state)
         assertEquals("I'd like to order a coffee, please.", result.betterExpression)
         assertEquals("Sure. Would you like anything to drink?", result.reply)
+        assertEquals("当然。你想喝点什么吗？", result.replyTranslation)
         assertEquals(84, result.scores.grammar.score)
         assertEquals(80, result.scores.pronunciation.score)
         assertTrue(result.tips.isNotEmpty())

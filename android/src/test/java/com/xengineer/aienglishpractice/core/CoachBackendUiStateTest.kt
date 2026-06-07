@@ -54,6 +54,17 @@ class CoachBackendUiStateTest {
     }
 
     @Test
+    fun backendSuccessCanMarkLanguageToolSource() {
+        val state = CoachBackendUiState.initial().withChecking()
+
+        val succeeded = state.withBackendSuccess(CoachFeedbackSource.LanguageTool)
+
+        assertEquals(CoachFeedbackSource.LanguageTool, succeeded.lastSource)
+        assertTrue(succeeded.statusText.contains("LanguageTool"))
+        assertFalse(succeeded.shouldUseLocalFallback)
+    }
+
+    @Test
     fun modeCyclesAutoBackendLocal() {
         val auto = CoachBackendUiState.initial()
         val backend = auto.nextMode()
