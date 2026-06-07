@@ -42,6 +42,7 @@ import com.xengineer.aienglishpractice.core.PracticeScenario
 import com.xengineer.aienglishpractice.core.RuleCorrectionEngine
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
 import com.xengineer.aienglishpractice.core.ScoreEngine
+import com.xengineer.aienglishpractice.core.SpeechListenMode
 import com.xengineer.aienglishpractice.core.VoiceInputMode
 import com.xengineer.aienglishpractice.core.VoiceUiState
 import com.xengineer.aienglishpractice.network.CoachAnalyzePayload
@@ -171,7 +172,7 @@ fun PracticeScreen(
                     )
                 )
                 session.recordAnalyzedTurn(backendResult)
-                backendState = activeBackendState.withBackendSuccess()
+                backendState = activeBackendState.withBackendSuccess(backendResult.source)
                 uiState = PracticeUiState.speaking(
                     scenario = scenario,
                     turnResult = backendResult
@@ -224,7 +225,7 @@ fun PracticeScreen(
         }
     }
 
-    fun startSpeechInput() {
+    fun startSpeechInput(listenMode: SpeechListenMode = SpeechListenMode.Standard) {
         if (!speechRecognizer.isAvailable()) {
             voiceState = voiceState.withRecognitionError("当前设备不可用语音识别。")
             return
@@ -234,12 +235,12 @@ fun PracticeScreen(
             return
         }
 
-        voiceState = voiceState.startSpeechFromCurrentMode()
+        voiceState = voiceState.startSpeechFromCurrentMode(listenMode)
         uiState = PracticeUiState.listening(scenario)
         speechRecognizer.startListening(
             SpeechRecognitionCallbacks(
                 onReady = {
-                    voiceState = voiceState.useSpeechMode().startListening()
+                    voiceState = voiceState.useSpeechMode().startListening(listenMode)
                     uiState = PracticeUiState.listening(scenario)
                 },
                 onPartial = { text ->
@@ -268,7 +269,8 @@ fun PracticeScreen(
                         message = "$message 可继续使用演示模式。"
                     )
                 }
-            )
+            ),
+            listenMode = listenMode
         )
     }
 
@@ -315,6 +317,7 @@ fun PracticeScreen(
                 FeedbackPanel(uiState = uiState, modifier = Modifier.weight(1f))
                 CoachPanel(
                     opening = scenario.opening,
+                    openingTranslation = scenario.openingTranslation,
                     uiState = uiState,
                     voiceState = voiceState,
                     onSpeakCoach = { speakCoachText() },
@@ -327,6 +330,7 @@ fun PracticeScreen(
                 backendState = backendState,
                 onPrimaryAction = { advancePrimary() },
                 onStartSpeech = { startSpeechInput() },
+                onStartLongSpeech = { startSpeechInput(SpeechListenMode.Extended) },
                 onToggleVoiceMode = { toggleVoiceMode() },
                 onToggleTts = { voiceState = voiceState.setTtsEnabled(!voiceState.ttsEnabled) },
                 onFinish = {
@@ -470,6 +474,7 @@ private fun FeedbackPanel(uiState: PracticeUiState, modifier: Modifier = Modifie
 @Composable
 private fun CoachPanel(
     opening: String,
+    openingTranslation: String,
     uiState: PracticeUiState,
     voiceState: VoiceUiState,
     onSpeakCoach: () -> Unit,
@@ -482,6 +487,10 @@ private fun CoachPanel(
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("教练回复", color = PracticeColors.Ink, fontWeight = FontWeight.Bold)
             Text(replyText(opening, uiState))
+            val translation = replyTranslationText(openingTranslation, uiState)
+            if (translation.isNotBlank()) {
+                Text(translation, color = PracticeColors.Ink)
+            }
             Text(
                 text = "来源：${turnResult?.source?.label() ?: "待生成"}",
                 color = PracticeColors.Ink
@@ -520,6 +529,7 @@ private fun PracticeControls(
     backendState: CoachBackendUiState,
     onPrimaryAction: () -> Unit,
     onStartSpeech: () -> Unit,
+    onStartLongSpeech: () -> Unit,
     onToggleVoiceMode: () -> Unit,
     onToggleTts: () -> Unit,
     onFinish: () -> Unit
@@ -537,9 +547,10 @@ private fun PracticeControls(
             )
             Spacer(Modifier.width(8.dp))
             PrimaryAction(
-                text = if (voiceState.isListening) "聆听中..." else voiceState.speechAction,
+                text = voiceState.speechAction,
                 onClick = onStartSpeech,
-                modifier = Modifier.widthIn(min = 112.dp)
+                modifier = Modifier.widthIn(min = 112.dp),
+                onLongClick = onStartLongSpeech
             )
             if (uiState.canFinish) {
                 Spacer(Modifier.width(8.dp))
@@ -578,6 +589,15 @@ private fun replyText(opening: String, uiState: PracticeUiState): String = when 
     PracticeState.Error -> "恢复练习后，可继续当前场景。"
 }
 
+private fun replyTranslationText(openingTranslation: String, uiState: PracticeUiState): String = when (uiState.phase) {
+    PracticeState.Idle,
+    PracticeState.Listening,
+    PracticeState.Recognizing -> openingTranslation
+
+    PracticeState.Speaking -> uiState.turnResult?.replyTranslation.orEmpty()
+    else -> ""
+}
+
 private fun demoTranscriptFor(scenarioId: String): String = when (scenarioId) {
     "interview" -> "I have experience in a team project, and I built a small Android demo."
     "meeting" -> "I think the timeline risk is high, and the next step should be a shorter plan."
@@ -601,6 +621,9 @@ private fun android.content.Context.hasRecordAudioPermission(): Boolean =
 
 private fun CoachFeedbackSource.label(): String = when (this) {
     CoachFeedbackSource.BackendApi -> "云端教练"
+    CoachFeedbackSource.BackendRule -> "云端规则"
+    CoachFeedbackSource.LanguageTool -> "LanguageTool"
+    CoachFeedbackSource.BackendRuleFallback -> "云端规则 fallback"
     CoachFeedbackSource.LocalFallback -> "本地分析"
     CoachFeedbackSource.BackendError -> "云端错误"
 }

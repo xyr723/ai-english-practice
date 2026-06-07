@@ -8,8 +8,20 @@ enum class CoachBackendMode {
 
 enum class CoachFeedbackSource {
     BackendApi,
+    BackendRule,
+    LanguageTool,
+    BackendRuleFallback,
     LocalFallback,
-    BackendError
+    BackendError;
+
+    companion object {
+        fun fromBackendSource(source: String?): CoachFeedbackSource = when (source) {
+            "RULE_ONLY" -> BackendRule
+            "LANGUAGE_TOOL" -> LanguageTool
+            "RULE_FALLBACK" -> BackendRuleFallback
+            else -> BackendApi
+        }
+    }
 }
 
 data class CoachBackendUiState(
@@ -37,6 +49,9 @@ data class CoachBackendUiState(
         get() = when {
             isChecking -> "正在连接云端。"
             lastSource == CoachFeedbackSource.BackendApi -> "云端教练已启用。"
+            lastSource == CoachFeedbackSource.BackendRule -> "云端规则纠错已启用。"
+            lastSource == CoachFeedbackSource.LanguageTool -> "LanguageTool 增强纠错已启用。"
+            lastSource == CoachFeedbackSource.BackendRuleFallback -> "LanguageTool 不可用，已用云端规则 fallback。"
             lastSource == CoachFeedbackSource.LocalFallback -> "云端不可用，已用本地分析。"
             lastSource == CoachFeedbackSource.BackendError -> "云端错误：${lastError.orEmpty()}"
             mode == CoachBackendMode.LocalOnly -> "仅使用本地分析。"
@@ -75,9 +90,9 @@ data class CoachBackendUiState(
         lastError = null
     )
 
-    fun withBackendSuccess(): CoachBackendUiState = copy(
+    fun withBackendSuccess(source: CoachFeedbackSource = CoachFeedbackSource.BackendApi): CoachBackendUiState = copy(
         isChecking = false,
-        lastSource = CoachFeedbackSource.BackendApi,
+        lastSource = source,
         lastError = null
     )
 

@@ -4,6 +4,7 @@
   "role": "Waitress",
   "level": "A2-B1",
   "opening": "Welcome! What would you like to order today?",
+  "openingTranslation": "欢迎光临！今天您想点什么？",
   "goals": [
     "order_food_or_drink",
     "use_polite_expression",
@@ -22,6 +23,7 @@
       "expectedIntent": "order_food_or_drink",
       "requiredSlots": ["item"],
       "reply": "Sure. Would you like anything to drink?",
+      "replyTranslation": "当然。你想喝点什么吗？",
       "correctionHints": [
         {
           "pattern": "I want order",
@@ -34,6 +36,7 @@
       "expectedIntent": "answer_follow_up_question",
       "requiredSlots": ["drink_or_no_drink"],
       "reply": "Great. Is that for here or takeaway?",
+      "replyTranslation": "好的。是在这里吃还是外带？",
       "correctionHints": []
     },
     {
@@ -41,6 +44,7 @@
       "expectedIntent": "confirm_option",
       "requiredSlots": ["for_here_or_takeaway"],
       "reply": "No problem. Your order will be ready soon.",
+      "replyTranslation": "没问题。你的餐很快就会准备好。",
       "correctionHints": []
     }
   ],
@@ -48,6 +52,10 @@
     "Could you say that again, please?",
     "Please tell me what you would like to order.",
     "Would you like that for here or takeaway?"
+  ],
+  "fallbackReplyTranslations": [
+    "请你再说一遍好吗？",
+    "请告诉我你想点什么。",
+    "你想在这里吃还是外带？"
   ]
 }
-

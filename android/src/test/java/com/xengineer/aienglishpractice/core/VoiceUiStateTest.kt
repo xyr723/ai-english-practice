@@ -32,6 +32,18 @@ class VoiceUiStateTest {
     }
 
     @Test
+    fun extendedListeningHasDistinctStateAndCopy() {
+        val state = VoiceUiState.initial(
+            recognizerAvailable = true,
+            audioPermissionGranted = true
+        ).useSpeechMode().startListening(SpeechListenMode.Extended)
+
+        assertEquals(SpeechListenMode.Extended, state.listenMode)
+        assertTrue(state.statusText.contains("长时"))
+        assertEquals("长时聆听中...", state.speechAction)
+    }
+
+    @Test
     fun speechStartCanRecoverFromDemoModeWhenCapabilitiesAreReady() {
         val state = VoiceUiState.initial(
             recognizerAvailable = true,
