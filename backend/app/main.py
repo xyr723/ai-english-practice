@@ -37,6 +37,7 @@ def grammar_check(request: GrammarCheckRequest):
 
     return check_text(
         request.text,
+        scenario_id=request.scenarioId or "",
         scenario_keywords=scenario_keywords,
         require_polite=require_polite,
         language=request.language,
@@ -53,6 +54,7 @@ def coach_analyze(request: CoachAnalyzeRequest):
 
     correction = check_text(
         request.turnText,
+        scenario_id=request.scenarioId,
         scenario_keywords=scenario.get("keywords", []),
         require_polite="use_polite_expression" in scenario.get("goals", []),
         language_tool_checker=LANGUAGE_TOOL_CHECKER,
@@ -71,7 +73,7 @@ def coach_analyze(request: CoachAnalyzeRequest):
 
     return {
         "reply": next_reply(scenario, request.turnText, request.turnIndex),
-        "replyTranslation": next_reply_translation(scenario, request.turnIndex),
+        "replyTranslation": next_reply_translation(scenario, request.turnIndex, request.turnText),
         "betterExpression": correction["betterExpression"],
         "tips": [issue["message"] for issue in correction["issues"]],
         "scores": scores,

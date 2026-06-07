@@ -30,14 +30,14 @@ adb reverse tcp:8000 tcp:8000
 
 ## LanguageTool 增强纠错
 
-默认未配置外部服务时，后端使用本地规则纠错并返回 `source=RULE_ONLY`。如需启用 LanguageTool，在启动后端前配置检查接口：
+默认未配置 `LANGUAGETOOL_URL` 时，后端会使用公共 LanguageTool 接口 `https://api.languagetool.org/v2/check`，练习文本会发送到该第三方服务。若需要本地或自建服务，在启动后端前配置检查接口：
 
 ```bash
-export LANGUAGETOOL_URL=https://api.languagetool.org/v2/check
-export LANGUAGETOOL_TIMEOUT_SECONDS=1.2
+export LANGUAGETOOL_URL=http://127.0.0.1:8081/v2/check
+export LANGUAGETOOL_TIMEOUT_SECONDS=4.0
 ```
 
-LanguageTool 调用成功时返回 `source=LANGUAGE_TOOL`；超时或异常时接口不中断，返回本地规则结果并标记 `source=RULE_FALLBACK`，Android 端会展示对应来源。
+LanguageTool 调用成功时返回 `source=LANGUAGE_TOOL`；超时或异常时接口不中断，返回本地规则和场景化建议结果并标记 `source=RULE_FALLBACK`，Android 端会展示对应来源。
 
 ## 测试
 
