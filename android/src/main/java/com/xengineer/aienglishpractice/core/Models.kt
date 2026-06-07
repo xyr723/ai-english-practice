@@ -14,7 +14,8 @@ data class SceneDescriptor(
     val theme: String,
     val backgroundColor: String,
     val objects: List<String>,
-    val role: String
+    val role: String,
+    val visualTheme: String = theme
 ) {
     companion object {
         fun restaurant(): SceneDescriptor = SceneDescriptor(
@@ -56,14 +57,16 @@ data class SceneDescriptor(
             theme = "library",
             backgroundColor = "#D9E6DA",
             objects = listOf("bookshelf", "book", "card", "desk"),
-            role = "librarian"
+            role = "librarian",
+            visualTheme = "office"
         )
 
         fun generic(prompt: String): SceneDescriptor = SceneDescriptor(
             theme = "custom",
             backgroundColor = "#E7F0EE",
             objects = listOf("counter", "screen", "chair", "window"),
-            role = prompt.ifBlank { "coach" }
+            role = prompt.ifBlank { "coach" },
+            visualTheme = "office"
         )
     }
 }

@@ -50,6 +50,18 @@ class CustomScenarioFactoryTest {
     }
 
     @Test
+    fun restaurantPromptReusesPresetLikePhotoBackedSceneContent() {
+        val scenario = CustomScenarioFactory.fromPrompt("咖啡店点餐")
+
+        assertEquals("restaurant", scenario.sceneDescriptor.theme)
+        assertEquals("restaurant", scenario.sceneDescriptor.visualTheme)
+        assertEquals("服务员", scenario.role)
+        assertEquals("barista", scenario.sceneDescriptor.role)
+        assertTrue(scenario.opening.contains("order", ignoreCase = true))
+        assertTrue(scenario.turns.first().reply.contains("drink", ignoreCase = true))
+    }
+
+    @Test
     fun unknownPromptBuildsDistinctGeneratedSceneDescriptor() {
         val scenario = CustomScenarioFactory.fromPrompt("医院挂号")
 
@@ -74,9 +86,13 @@ class CustomScenarioFactoryTest {
     fun unsupportedPromptKeepsPromptTopicInGeneratedDialogue() {
         val scenario = CustomScenarioFactory.fromPrompt("健身房办卡")
 
-        assertEquals("custom", scenario.sceneDescriptor.theme)
-        assertTrue(scenario.opening.contains("健身房办卡"))
-        assertTrue(scenario.turns.first().reply.contains("健身房办卡"))
-        assertTrue(scenario.fallbackReplies.first().contains("健身房办卡"))
+        assertEquals("gym", scenario.sceneDescriptor.theme)
+        assertEquals("office", scenario.sceneDescriptor.visualTheme)
+        assertEquals("健身房顾问", scenario.role)
+        assertEquals("gym membership advisor", scenario.sceneDescriptor.role)
+        assertTrue(scenario.keywords.containsAll(listOf("membership", "plan", "gym", "card")))
+        assertTrue(scenario.opening.contains("membership", ignoreCase = true))
+        assertTrue(scenario.turns.first().reply.contains("membership plan", ignoreCase = true))
+        assertTrue(scenario.fallbackReplies.first().contains("membership", ignoreCase = true))
     }
 }

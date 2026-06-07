@@ -95,6 +95,14 @@ class PracticeScreenContractTest {
     }
 
     @Test
+    fun customSceneBackgroundUsesPhotoBackedVisualTheme() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("when (descriptor.visualTheme)"))
+        assertFalse(source.contains("when (descriptor.theme)"))
+    }
+
+    @Test
     fun practiceTopActionsUseVectorIcons() {
         val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
         val voiceSource = File("src/main/java/com/xengineer/aienglishpractice/core/VoiceUiState.kt").readText()
