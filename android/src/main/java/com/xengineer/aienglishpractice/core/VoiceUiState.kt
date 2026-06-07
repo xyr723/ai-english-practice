@@ -5,16 +5,23 @@ enum class VoiceInputMode {
     SpeechRecognizer
 }
 
+enum class SpeechListenMode {
+    Standard,
+    Extended
+}
+
 data class VoiceUiState(
     val mode: VoiceInputMode,
     val recognizerAvailable: Boolean,
     val audioPermissionGranted: Boolean,
     val isListening: Boolean = false,
+    val listenMode: SpeechListenMode = SpeechListenMode.Standard,
     val partialTranscript: String = "",
     val finalTranscript: String = "",
     val errorMessage: String? = null,
     val ttsEnabled: Boolean = true,
-    val ttsReady: Boolean = false
+    val ttsReady: Boolean = false,
+    val isTtsSpeaking: Boolean = false
 ) {
     val canStartSpeech: Boolean
         get() = mode == VoiceInputMode.SpeechRecognizer &&
@@ -28,26 +35,33 @@ data class VoiceUiState(
     val statusText: String
         get() = when {
             errorMessage != null -> errorMessage
-            mode == VoiceInputMode.DemoFallback && !recognizerAvailable -> "Speech recognition is unavailable. Demo fallback is ready."
-            mode == VoiceInputMode.DemoFallback && !audioPermissionGranted -> "Demo fallback is ready. Grant microphone permission to use speech."
-            mode == VoiceInputMode.DemoFallback -> "Demo fallback is ready."
-            isListening -> "Listening with Android SpeechRecognizer."
-            bestTranscript.isNotBlank() -> "Speech transcript is ready."
-            else -> "Speech mode is ready."
+            mode == VoiceInputMode.DemoFallback && !recognizerAvailable -> "语音不可用，可用演示。"
+            mode == VoiceInputMode.DemoFallback && !audioPermissionGranted -> "需麦克风权限，可用演示。"
+            mode == VoiceInputMode.DemoFallback -> "演示模式可用。"
+            isListening && listenMode == SpeechListenMode.Extended -> "长时聆听中。"
+            isListening -> "正在聆听。"
+            bestTranscript.isNotBlank() -> "转写已就绪。"
+            else -> "语音模式已就绪。"
         }
 
     val modeAction: String
-        get() = if (mode == VoiceInputMode.SpeechRecognizer) "Use Demo" else "Use Speech"
+        get() = if (mode == VoiceInputMode.SpeechRecognizer) "演示模式" else "语音模式"
 
     val speechAction: String
-        get() = if (isListening) "Listening..." else "Start Speech"
+        get() = when {
+            isListening && listenMode == SpeechListenMode.Extended -> "长时聆听中..."
+            isListening -> "聆听中..."
+            else -> "开始语音"
+        }
 
     val ttsAction: String
-        get() = if (ttsEnabled) "Disable TTS" else "Enable TTS"
+        get() = if (ttsEnabled) "关闭朗读" else "打开朗读"
 
     fun useDemoMode(): VoiceUiState = copy(
         mode = VoiceInputMode.DemoFallback,
         isListening = false,
+        listenMode = SpeechListenMode.Standard,
+        isTtsSpeaking = false,
         errorMessage = null
     )
 
@@ -75,9 +89,10 @@ data class VoiceUiState(
         )
     }
 
-    fun startListening(): VoiceUiState = if (canStartSpeech) {
+    fun startListening(listenMode: SpeechListenMode = SpeechListenMode.Standard): VoiceUiState = if (canStartSpeech) {
         copy(
             isListening = true,
+            listenMode = listenMode,
             partialTranscript = "",
             finalTranscript = "",
             errorMessage = null
@@ -86,9 +101,14 @@ data class VoiceUiState(
         copy(
             mode = VoiceInputMode.DemoFallback,
             isListening = false,
-            errorMessage = "Speech input is not ready. Demo fallback is available."
+            listenMode = SpeechListenMode.Standard,
+            errorMessage = "语音输入未就绪，可使用演示模式。"
         )
     }
+
+    fun startSpeechFromCurrentMode(
+        listenMode: SpeechListenMode = SpeechListenMode.Standard
+    ): VoiceUiState = useSpeechMode().startListening(listenMode)
 
     fun withPartialTranscript(text: String): VoiceUiState = copy(
         partialTranscript = text,
@@ -97,6 +117,7 @@ data class VoiceUiState(
 
     fun withFinalTranscript(text: String): VoiceUiState = copy(
         isListening = false,
+        listenMode = SpeechListenMode.Standard,
         finalTranscript = text,
         partialTranscript = "",
         errorMessage = null
@@ -105,12 +126,22 @@ data class VoiceUiState(
     fun withRecognitionError(message: String): VoiceUiState = copy(
         mode = VoiceInputMode.DemoFallback,
         isListening = false,
+        listenMode = SpeechListenMode.Standard,
+        isTtsSpeaking = false,
         errorMessage = message
     )
 
-    fun setTtsEnabled(enabled: Boolean): VoiceUiState = copy(ttsEnabled = enabled)
+    fun setTtsEnabled(enabled: Boolean): VoiceUiState = copy(
+        ttsEnabled = enabled,
+        isTtsSpeaking = if (enabled) isTtsSpeaking else false
+    )
 
-    fun setTtsReady(ready: Boolean): VoiceUiState = copy(ttsReady = ready)
+    fun setTtsReady(ready: Boolean): VoiceUiState = copy(
+        ttsReady = ready,
+        isTtsSpeaking = if (ready) isTtsSpeaking else false
+    )
+
+    fun setTtsSpeaking(speaking: Boolean): VoiceUiState = copy(isTtsSpeaking = speaking)
 
     companion object {
         fun initial(

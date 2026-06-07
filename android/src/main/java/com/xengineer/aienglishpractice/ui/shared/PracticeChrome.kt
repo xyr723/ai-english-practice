@@ -1,6 +1,7 @@
 package com.xengineer.aienglishpractice.ui.shared
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,15 +9,19 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.xengineer.aienglishpractice.ui.theme.PracticeColors
@@ -27,7 +32,7 @@ fun StageScaffold(content: @Composable () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(PracticeColors.StageBrush)
-            .padding(24.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         content()
     }
@@ -45,7 +50,11 @@ fun LightPanel(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        Box(Modifier.padding(18.dp)) {
+        Box(
+            Modifier
+                .padding(14.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             content()
         }
     }
@@ -63,7 +72,11 @@ fun DarkPanel(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        Box(Modifier.padding(18.dp)) {
+        Box(
+            Modifier
+                .padding(14.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             content()
         }
     }
@@ -73,8 +86,31 @@ fun DarkPanel(
 fun PrimaryAction(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
 ) {
+    if (onLongClick != null) {
+        Surface(
+            modifier = modifier.pointerInput(onClick, onLongClick) {
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onLongPress = { onLongClick() }
+                )
+            },
+            color = PracticeColors.Sky,
+            contentColor = Color.White,
+            shape = ButtonDefaults.shape
+        ) {
+            Box(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text, color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+        return
+    }
+
     Button(
         onClick = onClick,
         modifier = modifier,
@@ -82,7 +118,7 @@ fun PrimaryAction(
             containerColor = PracticeColors.Sky,
             contentColor = Color.White
         ),
-        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp)
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
     ) {
         Text(text, fontWeight = FontWeight.Bold)
     }

@@ -8,8 +8,20 @@ enum class CoachBackendMode {
 
 enum class CoachFeedbackSource {
     BackendApi,
+    BackendRule,
+    LanguageTool,
+    BackendRuleFallback,
     LocalFallback,
-    BackendError
+    BackendError;
+
+    companion object {
+        fun fromBackendSource(source: String?): CoachFeedbackSource = when (source) {
+            "RULE_ONLY" -> BackendRule
+            "LANGUAGE_TOOL" -> LanguageTool
+            "RULE_FALLBACK" -> BackendRuleFallback
+            else -> BackendApi
+        }
+    }
 }
 
 data class CoachBackendUiState(
@@ -28,20 +40,23 @@ data class CoachBackendUiState(
 
     val modeAction: String
         get() = when (mode) {
-            CoachBackendMode.Auto -> "Backend Only"
-            CoachBackendMode.BackendOnly -> "Use Local"
-            CoachBackendMode.LocalOnly -> "Use Backend"
+            CoachBackendMode.Auto -> "仅云端"
+            CoachBackendMode.BackendOnly -> "本地模式"
+            CoachBackendMode.LocalOnly -> "自动模式"
         }
 
     val statusText: String
         get() = when {
-            isChecking -> "Checking with backend API..."
-            lastSource == CoachFeedbackSource.BackendApi -> "Backend API feedback active."
-            lastSource == CoachFeedbackSource.LocalFallback -> "Backend unavailable; using local fallback."
-            lastSource == CoachFeedbackSource.BackendError -> "Backend error: ${lastError.orEmpty()}"
-            mode == CoachBackendMode.LocalOnly -> "Local fallback only."
-            mode == CoachBackendMode.BackendOnly -> "Backend API only."
-            else -> "Auto backend with local fallback."
+            isChecking -> "正在连接云端。"
+            lastSource == CoachFeedbackSource.BackendApi -> "云端教练已启用。"
+            lastSource == CoachFeedbackSource.BackendRule -> "云端规则纠错已启用。"
+            lastSource == CoachFeedbackSource.LanguageTool -> "LanguageTool 增强纠错已启用。"
+            lastSource == CoachFeedbackSource.BackendRuleFallback -> "LanguageTool 不可用，已用云端规则 fallback。"
+            lastSource == CoachFeedbackSource.LocalFallback -> "云端不可用，已用本地分析。"
+            lastSource == CoachFeedbackSource.BackendError -> "云端错误：${lastError.orEmpty()}"
+            mode == CoachBackendMode.LocalOnly -> "仅使用本地分析。"
+            mode == CoachBackendMode.BackendOnly -> "仅连接云端教练。"
+            else -> "云端优先，本地备用。"
         }
 
     fun useAuto(): CoachBackendUiState = copy(
@@ -75,9 +90,9 @@ data class CoachBackendUiState(
         lastError = null
     )
 
-    fun withBackendSuccess(): CoachBackendUiState = copy(
+    fun withBackendSuccess(source: CoachFeedbackSource = CoachFeedbackSource.BackendApi): CoachBackendUiState = copy(
         isChecking = false,
-        lastSource = CoachFeedbackSource.BackendApi,
+        lastSource = source,
         lastError = null
     )
 
@@ -96,10 +111,13 @@ data class CoachBackendUiState(
     }
 
     companion object {
-        const val DEFAULT_BASE_URL = "http://10.0.2.2:8000"
+        const val DEFAULT_BASE_URL = CoachEndpointConfig.USB_DEVICE_BASE_URL
 
-        fun initial(baseUrl: String = DEFAULT_BASE_URL): CoachBackendUiState = CoachBackendUiState(
-            mode = CoachBackendMode.Auto,
+        fun initial(
+            baseUrl: String = DEFAULT_BASE_URL,
+            mode: CoachBackendMode = CoachBackendMode.Auto
+        ): CoachBackendUiState = CoachBackendUiState(
+            mode = mode,
             baseUrl = baseUrl
         )
     }

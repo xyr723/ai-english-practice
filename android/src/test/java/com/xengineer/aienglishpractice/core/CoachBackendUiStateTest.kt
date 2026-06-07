@@ -17,7 +17,7 @@ class CoachBackendUiStateTest {
 
         assertTrue(failed.shouldUseLocalFallback)
         assertEquals(CoachFeedbackSource.LocalFallback, failed.lastSource)
-        assertTrue(failed.statusText.contains("fallback", ignoreCase = true))
+        assertTrue(failed.statusText.contains("本地分析"))
     }
 
     @Test
@@ -27,7 +27,7 @@ class CoachBackendUiStateTest {
         assertEquals(CoachBackendMode.LocalOnly, state.mode)
         assertFalse(state.shouldTryBackend)
         assertTrue(state.shouldUseLocalFallback)
-        assertEquals("Use Backend", state.modeAction)
+        assertEquals("自动模式", state.modeAction)
     }
 
     @Test
@@ -51,6 +51,17 @@ class CoachBackendUiStateTest {
         assertEquals(CoachFeedbackSource.BackendApi, succeeded.lastSource)
         assertEquals(null, succeeded.lastError)
         assertFalse(succeeded.isChecking)
+    }
+
+    @Test
+    fun backendSuccessCanMarkLanguageToolSource() {
+        val state = CoachBackendUiState.initial().withChecking()
+
+        val succeeded = state.withBackendSuccess(CoachFeedbackSource.LanguageTool)
+
+        assertEquals(CoachFeedbackSource.LanguageTool, succeeded.lastSource)
+        assertTrue(succeeded.statusText.contains("LanguageTool"))
+        assertFalse(succeeded.shouldUseLocalFallback)
     }
 
     @Test

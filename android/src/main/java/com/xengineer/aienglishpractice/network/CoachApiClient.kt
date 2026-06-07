@@ -35,7 +35,7 @@ class CoachApiClient(
             }
 
             if (statusCode !in 200..299) {
-                throw IOException("HTTP $statusCode ${responseText.ifBlank { "from backend" }}")
+                throw IOException("HTTP $statusCode ${responseText.ifBlank { "来自云端" }}")
             }
 
             JSONObject(responseText).toTurnResult(request.turnText)
@@ -65,11 +65,12 @@ private fun JSONObject.toTurnResult(userText: String): TurnResult = TurnResult(
     userText = userText,
     betterExpression = getString("betterExpression"),
     reply = getString("reply"),
+    replyTranslation = optString("replyTranslation"),
     scores = getJSONObject("scores").toScoreBundle(),
     tips = getJSONArray("tips").let { tipsJson ->
         List(tipsJson.length()) { index -> tipsJson.getString(index) }
     },
-    source = CoachFeedbackSource.BackendApi
+    source = CoachFeedbackSource.fromBackendSource(optString("source"))
 )
 
 private fun JSONObject.toScoreBundle(): ScoreBundle = ScoreBundle(

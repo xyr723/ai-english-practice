@@ -59,7 +59,7 @@ fun ScenarioListScreen(
                 LearningPathPanel(modifier = Modifier.weight(0.75f))
             }
             Text(
-                text = "Pick a scene, review the goals, then start a guided speaking loop.",
+                text = "选择场景，查看目标，然后进入引导式口语练习。",
                 color = Color(0xFFDCEDEA)
             )
         }
@@ -75,19 +75,19 @@ private fun ScenarioListHeader(onBackHome: () -> Unit) {
     ) {
         Column {
             Text(
-                text = "Scenarios",
+                text = "练习场景",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Choose a focused speaking context",
+                text = "选择一个明确的口语语境",
                 color = Color(0xFFDCEDEA),
                 style = MaterialTheme.typography.titleMedium
             )
         }
         TextButton(onClick = onBackHome) {
-            Text("Home", color = Color.White)
+            Text("首页", color = Color.White)
         }
     }
 }
@@ -118,13 +118,13 @@ private fun ScenarioRow(
                 Text(text = scenario.description, color = PracticeColors.Ink)
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    ScenarioStat(label = "Role", value = scenario.role)
-                    ScenarioStat(label = "Level", value = scenario.level)
-                    ScenarioStat(label = "Time", value = "${scenario.estimatedMinutes} min")
+                    ScenarioStat(label = "角色", value = scenario.role)
+                    ScenarioStat(label = "等级", value = scenario.level)
+                    ScenarioStat(label = "时长", value = "${scenario.estimatedMinutes} 分")
                 }
             }
             Spacer(Modifier.width(16.dp))
-            PrimaryAction(text = "Details", onClick = onClick)
+            PrimaryAction(text = "详情", onClick = onClick)
         }
     }
 }
@@ -141,13 +141,13 @@ private fun ScenarioStat(label: String, value: String) {
 private fun LearningPathPanel(modifier: Modifier = Modifier) {
     DarkPanel(modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("Practice path", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
+            Text("练习路径", color = PracticeColors.Amber, fontWeight = FontWeight.Bold)
             Text(
-                text = "1. Choose scene\n2. Read goals\n3. Start demo turn\n4. Finish and review scores",
+                text = "1. 选择场景\n2. 查看目标\n3. 完成一轮对话\n4. 查看总结评分",
                 color = Color.White
             )
             Text(
-                text = "The same feedback engine is reused across scenes, so every session gets correction, scoring, and summary.",
+                text = "每个场景都会复用同一套反馈引擎，稳定产出纠错、评分和总结。",
                 color = Color(0xFFEAD7C4)
             )
         }

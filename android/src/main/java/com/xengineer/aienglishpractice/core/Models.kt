@@ -15,10 +15,12 @@ data class PracticeScenario(
     val name: String,
     val role: String,
     val opening: String,
+    val openingTranslation: String = "",
     val goals: List<String>,
     val keywords: List<String>,
     val turns: List<ScenarioTurn>,
     val fallbackReplies: List<String>,
+    val fallbackReplyTranslations: List<String> = emptyList(),
     val description: String = "",
     val level: String = "A2-B1",
     val estimatedMinutes: Int = 8,
@@ -27,13 +29,14 @@ data class PracticeScenario(
     companion object {
         fun restaurant(): PracticeScenario = PracticeScenario(
             id = "restaurant",
-            name = "Restaurant Ordering",
-            role = "Waitress",
+            name = "餐厅点餐",
+            role = "服务员",
             opening = "Welcome! What would you like to order today?",
-            description = "Order food and drinks in a cafe while keeping the conversation polite and clear.",
+            openingTranslation = "欢迎光临！今天您想点什么？",
+            description = "练习在咖啡店点餐，重点是礼貌表达和清晰回应。",
             level = "A2",
             estimatedMinutes = 8,
-            sceneTone = "warm cafe service",
+            sceneTone = "温和服务场景",
             goals = listOf(
                 "order_food_or_drink",
                 "use_polite_expression",
@@ -44,34 +47,42 @@ data class PracticeScenario(
                 ScenarioTurn(
                     id = "turn-1",
                     expectedIntent = "order_food_or_drink",
-                    reply = "Sure. Would you like anything to drink?"
+                    reply = "Sure. Would you like anything to drink?",
+                    replyTranslation = "当然。你想喝点什么吗？"
                 ),
                 ScenarioTurn(
                     id = "turn-2",
                     expectedIntent = "answer_follow_up_question",
-                    reply = "Great. Is that for here or takeaway?"
+                    reply = "Great. Is that for here or takeaway?",
+                    replyTranslation = "好的。是在这里吃还是外带？"
                 ),
                 ScenarioTurn(
                     id = "turn-3",
                     expectedIntent = "confirm_option",
-                    reply = "No problem. Your order will be ready soon."
+                    reply = "No problem. Your order will be ready soon.",
+                    replyTranslation = "没问题。你的餐很快就会准备好。"
                 )
             ),
             fallbackReplies = listOf(
                 "Could you say that again, please?",
                 "Please tell me what you would like to order."
+            ),
+            fallbackReplyTranslations = listOf(
+                "请你再说一遍好吗？",
+                "请告诉我你想点什么。"
             )
         )
 
         fun interview(): PracticeScenario = PracticeScenario(
             id = "interview",
-            name = "Interview Practice",
-            role = "Interviewer",
+            name = "面试练习",
+            role = "面试官",
             opening = "Thanks for joining today. Could you briefly introduce yourself?",
-            description = "Answer common interview questions with concise, confident, and professional wording.",
+            openingTranslation = "感谢你今天来参加面试。可以简要介绍一下自己吗？",
+            description = "练习常见面试问题，用简洁、自信、专业的英语作答。",
             level = "A2-B1",
             estimatedMinutes = 10,
-            sceneTone = "formal interview coaching",
+            sceneTone = "正式面试训练",
             goals = listOf(
                 "introduce_self",
                 "describe_experience",
@@ -82,34 +93,42 @@ data class PracticeScenario(
                 ScenarioTurn(
                     id = "turn-1",
                     expectedIntent = "introduce_self",
-                    reply = "Good. Could you tell me about one project you worked on?"
+                    reply = "Good. Could you tell me about one project you worked on?",
+                    replyTranslation = "很好。你能讲一个你参与过的项目吗？"
                 ),
                 ScenarioTurn(
                     id = "turn-2",
                     expectedIntent = "describe_experience",
-                    reply = "What was your main contribution to that project?"
+                    reply = "What was your main contribution to that project?",
+                    replyTranslation = "你在那个项目中的主要贡献是什么？"
                 ),
                 ScenarioTurn(
                     id = "turn-3",
                     expectedIntent = "answer_follow_up_question",
-                    reply = "Thanks. What would you like to improve next?"
+                    reply = "Thanks. What would you like to improve next?",
+                    replyTranslation = "谢谢。接下来你想提升哪方面？"
                 )
             ),
             fallbackReplies = listOf(
                 "Please answer with one concrete example.",
                 "Could you make your answer a little more specific?"
+            ),
+            fallbackReplyTranslations = listOf(
+                "请用一个具体例子来回答。",
+                "你能把回答说得更具体一点吗？"
             )
         )
 
         fun meeting(): PracticeScenario = PracticeScenario(
             id = "meeting",
-            name = "Meeting Discussion",
-            role = "Project Lead",
+            name = "会议讨论",
+            role = "项目负责人",
             opening = "Let's review the plan. What should we discuss first?",
-            description = "Practice giving opinions, asking follow-up questions, and confirming next steps in a meeting.",
+            openingTranslation = "我们来回顾一下计划。应该先讨论什么？",
+            description = "练习表达观点、追问细节，并在会议中确认下一步。",
             level = "B1",
             estimatedMinutes = 10,
-            sceneTone = "collaborative workplace meeting",
+            sceneTone = "协作会议场景",
             goals = listOf(
                 "give_opinion",
                 "ask_clarifying_question",
@@ -120,22 +139,29 @@ data class PracticeScenario(
                 ScenarioTurn(
                     id = "turn-1",
                     expectedIntent = "give_opinion",
-                    reply = "Thanks. What is the main timeline risk?"
+                    reply = "Thanks. What is the main timeline risk?",
+                    replyTranslation = "谢谢。主要的时间风险是什么？"
                 ),
                 ScenarioTurn(
                     id = "turn-2",
                     expectedIntent = "ask_clarifying_question",
-                    reply = "That makes sense. What next step should we assign?"
+                    reply = "That makes sense. What next step should we assign?",
+                    replyTranslation = "有道理。我们应该安排什么下一步？"
                 ),
                 ScenarioTurn(
                     id = "turn-3",
                     expectedIntent = "confirm_next_step",
-                    reply = "Great. I will note that as the action item."
+                    reply = "Great. I will note that as the action item.",
+                    replyTranslation = "很好。我会把它记录为行动项。"
                 )
             ),
             fallbackReplies = listOf(
                 "Could you share one concrete point for the meeting?",
                 "Please explain the risk or next step in one sentence."
+            ),
+            fallbackReplyTranslations = listOf(
+                "你能分享一个会议中的具体观点吗？",
+                "请用一句话说明风险或下一步。"
             )
         )
     }
@@ -144,7 +170,8 @@ data class PracticeScenario(
 data class ScenarioTurn(
     val id: String,
     val expectedIntent: String,
-    val reply: String
+    val reply: String,
+    val replyTranslation: String = ""
 )
 
 data class CorrectionResult(
@@ -176,9 +203,25 @@ data class TurnResult(
     val userText: String,
     val betterExpression: String,
     val reply: String,
+    val replyTranslation: String = "",
     val scores: ScoreBundle,
     val tips: List<String>,
     val source: CoachFeedbackSource = CoachFeedbackSource.LocalFallback
+)
+
+data class SummaryScoreBreakdown(
+    val label: String,
+    val score: Int,
+    val reason: String
+)
+
+data class SummaryTurnReview(
+    val index: Int,
+    val userText: String,
+    val betterExpression: String,
+    val reply: String,
+    val score: Int,
+    val tips: List<String>
 )
 
 data class PracticeSummary(
@@ -186,5 +229,8 @@ data class PracticeSummary(
     val averageScore: Int,
     val strengths: List<String>,
     val improvements: List<String>,
-    val nextGoal: String
+    val nextGoal: String,
+    val scoreBreakdown: List<SummaryScoreBreakdown> = emptyList(),
+    val turnReviews: List<SummaryTurnReview> = emptyList(),
+    val practicePlan: List<String> = emptyList()
 )

@@ -13,7 +13,7 @@ class RuleCorrectionEngine {
             )
             issues += CorrectionIssue(
                 type = "grammar",
-                message = "Use 'to order' or a polite ordering expression.",
+                message = "点餐时建议使用 “to order” 或更礼貌的表达。",
                 suggestion = "I'd like to order"
             )
         }
@@ -27,7 +27,7 @@ class RuleCorrectionEngine {
             better = better.trim().trimEnd('.', '!', '?') + ", please."
             issues += CorrectionIssue(
                 type = "politeness",
-                message = "Add a polite expression in ordering scenes.",
+                message = "点餐场景建议补充礼貌表达。",
                 suggestion = "please"
             )
         } else if (better.isNotBlank() && better.last() !in ".!?") {

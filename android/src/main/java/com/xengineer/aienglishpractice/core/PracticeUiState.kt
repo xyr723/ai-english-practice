@@ -10,35 +10,35 @@ data class PracticeUiState(
 ) {
     val statusTitle: String
         get() = when (phase) {
-            PracticeState.Idle -> "Ready"
-            PracticeState.Listening -> "Listening"
-            PracticeState.Recognizing -> "Recognized transcript"
-            PracticeState.Thinking -> "Coach is checking"
-            PracticeState.Speaking -> "Feedback ready"
-            PracticeState.Finished -> "Session complete"
-            PracticeState.Error -> "Something needs attention"
+            PracticeState.Idle -> "准备开始"
+            PracticeState.Listening -> "正在聆听"
+            PracticeState.Recognizing -> "识别完成"
+            PracticeState.Thinking -> "教练分析中"
+            PracticeState.Speaking -> "反馈已生成"
+            PracticeState.Finished -> "练习完成"
+            PracticeState.Error -> "需要处理"
         }
 
     val statusBody: String
         get() = when (phase) {
-            PracticeState.Idle -> "Coach says: ${scenario.opening}"
-            PracticeState.Listening -> "Speak one complete answer for the ${scenario.name} scene."
-            PracticeState.Recognizing -> "Review the transcript before sending it to the coach."
-            PracticeState.Thinking -> "Checking grammar, expression, pronunciation confidence, and goal completion."
-            PracticeState.Speaking -> "Review the improved expression, score details, and coach reply."
-            PracticeState.Finished -> "Review the session summary and restart when ready."
-            PracticeState.Error -> errorMessage ?: "Recover and try the current scene again."
+            PracticeState.Idle -> "教练开场：${scenario.opening}"
+            PracticeState.Listening -> "请用英语完成一段回答，场景：${scenario.name}。"
+            PracticeState.Recognizing -> "先检查识别文本，再提交给教练分析。"
+            PracticeState.Thinking -> "正在检查语法、表达、发音置信度和目标完成度。"
+            PracticeState.Speaking -> "查看优化表达、评分细节和教练回复。"
+            PracticeState.Finished -> "查看本次总结，准备好后可重新练习。"
+            PracticeState.Error -> errorMessage ?: "恢复后继续当前场景。"
         }
 
     val primaryAction: String
         get() = when (phase) {
-            PracticeState.Idle -> "Start Listening"
-            PracticeState.Listening -> "Recognize Demo"
-            PracticeState.Recognizing -> "Ask Coach"
-            PracticeState.Thinking -> "Show Feedback"
-            PracticeState.Speaking -> "Next Turn"
-            PracticeState.Finished -> "Restart Scene"
-            PracticeState.Error -> "Recover"
+            PracticeState.Idle -> "开始练习"
+            PracticeState.Listening -> "识别演示"
+            PracticeState.Recognizing -> "提交给教练"
+            PracticeState.Thinking -> "查看反馈"
+            PracticeState.Speaking -> "下一轮"
+            PracticeState.Finished -> "重新开始"
+            PracticeState.Error -> "恢复练习"
         }
 
     val canFinish: Boolean
@@ -161,11 +161,11 @@ private fun PracticeState.stepOrder(): Int = when (this) {
 }
 
 private fun PracticeState.stepLabel(): String = when (this) {
-    PracticeState.Idle -> "Ready"
-    PracticeState.Listening -> "Listen"
-    PracticeState.Recognizing -> "ASR"
-    PracticeState.Thinking -> "Check"
-    PracticeState.Speaking -> "Feedback"
-    PracticeState.Finished -> "Summary"
-    PracticeState.Error -> "Recover"
+    PracticeState.Idle -> "准备"
+    PracticeState.Listening -> "聆听"
+    PracticeState.Recognizing -> "识别"
+    PracticeState.Thinking -> "分析"
+    PracticeState.Speaking -> "反馈"
+    PracticeState.Finished -> "总结"
+    PracticeState.Error -> "恢复"
 }

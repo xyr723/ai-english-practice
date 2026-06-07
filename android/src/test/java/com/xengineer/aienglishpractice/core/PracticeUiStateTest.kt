@@ -12,9 +12,9 @@ class PracticeUiStateTest {
         val state = PracticeUiState.initial(scenario)
 
         assertEquals(PracticeState.Idle, state.phase)
-        assertEquals("Ready", state.statusTitle)
+        assertEquals("准备开始", state.statusTitle)
         assertTrue(state.statusBody.contains(scenario.opening))
-        assertEquals("Start Listening", state.primaryAction)
+        assertEquals("开始练习", state.primaryAction)
         assertEquals(0, state.stepIndex)
     }
 
@@ -45,7 +45,7 @@ class PracticeUiStateTest {
 
         assertEquals(PracticeState.Recognizing, state.phase)
         assertEquals(transcript, state.transcript)
-        assertEquals("Ask Coach", state.primaryAction)
+        assertEquals("提交给教练", state.primaryAction)
         assertFalse(state.canFinish)
     }
 
@@ -69,7 +69,7 @@ class PracticeUiStateTest {
         )
 
         assertEquals(PracticeState.Speaking, state.phase)
-        assertEquals("Next Turn", state.primaryAction)
+        assertEquals("下一轮", state.primaryAction)
         assertTrue(state.canFinish)
         assertEquals(4, state.stepIndex)
     }
@@ -89,8 +89,8 @@ class PracticeUiStateTest {
         )
 
         assertEquals(PracticeState.Finished, state.phase)
-        assertEquals("Session complete", state.statusTitle)
-        assertEquals("Restart Scene", state.primaryAction)
+        assertEquals("练习完成", state.statusTitle)
+        assertEquals("重新开始", state.primaryAction)
         assertEquals(summary, state.summary)
         assertEquals(5, state.stepIndex)
     }
@@ -103,7 +103,7 @@ class PracticeUiStateTest {
         )
 
         assertEquals(PracticeState.Error, state.phase)
-        assertEquals("Recover", state.primaryAction)
+        assertEquals("恢复练习", state.primaryAction)
         assertTrue(state.canRetry)
         assertTrue(state.statusBody.contains("Microphone permission"))
     }

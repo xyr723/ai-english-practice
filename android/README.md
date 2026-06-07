@@ -47,15 +47,36 @@ android/build/outputs/apk/debug/android-debug.apk
 6. 练习页展示 `Ready`、`Listening`、`Recognized transcript`、`Coach is checking`、`Feedback ready`、`Session complete` 和错误恢复状态。
 7. 点击 `Start Speech` 请求麦克风权限并启动 Android SpeechRecognizer；识别结果进入 transcript 区域。
 8. 没有权限或设备不支持识别时，页面保留 demo fallback，可继续用 `Recognize Demo` 完成演示链路。
-9. 点击 `Ask Coach`、`Show Feedback` 后，默认以 Auto 模式请求后端 `/coach/analyze`，成功时使用后端回复、纠错和评分。
-10. 后端不可用时 Auto 模式自动回落到本地规则；也可以切换为 Backend Only 或 Local Only。
+9. 点击 `生成反馈` 后，默认请求云端教练 `/coach/analyze`，成功时使用云端回复、纠错和评分。
+10. 云端不可用时自动回落到本地分析，保证演示闭环不断。
 11. 页面展示推荐表达、纠错提示、AI 回复、四维评分和反馈来源。
-12. TTS 默认开启，`Speak Coach` 可朗读教练开场或回复，也可以通过 `Disable TTS` 关闭。
-13. 点击 `Finish` 展示课后总结，并把本次总结写入本地 History。
-14. 点击 `History` 查看本地练习记录、最近分数、下一步目标，并可重复练习同一场景或清空记录。
+12. TTS 默认开启，`朗读回复` 可朗读教练开场或回复，也可以通过 `关闭朗读` 关闭。
+13. 点击 `完成` 展示课后总结，并把本次总结写入本地练习记录。
+14. 点击 `记录` 查看本地练习记录、最近分数、下一步目标，并可重复练习同一场景或清空记录。
 15. 回到首页后，今日完成 turn 数和最近一次总结会从本地历史更新。
+16. 设置页的连接方式、自定义 Cloudflare Tunnel 地址和引擎策略会持久化保存，App 重启后继续生效。
+17. 设置页的引擎策略会传入练习页：稳定演示使用云端优先、本地兜底；效果优先预留云端增强入口并展示当前回退链路；离线优先直接使用本地规则分析。
 
-Android 模拟器默认访问 `http://10.0.2.2:8000`，对应本机运行的 FastAPI 服务。后端不可用时仍可通过本地 fallback 完成练习、总结和历史记录。
+Android 真机默认通过 USB bridge 访问 `http://127.0.0.1:8000`，对应本机运行的 FastAPI 服务。后端不可用时仍可通过本地 fallback 完成练习、总结和历史记录。
+
+## 云端教练地址
+
+设置页提供三种地址：
+
+- `USB 真机`：默认地址 `http://127.0.0.1:8000`，需要先执行 `adb reverse tcp:8000 tcp:8000`。
+- `Android 模拟器`：地址 `http://10.0.2.2:8000`，用于模拟器访问宿主机。
+- `自定义地址`：用于局域网 IP 或隧道地址，例如 `http://192.168.1.23:8000`。
+
+真机 USB 联调步骤：
+
+```bash
+cd backend
+. .venv/bin/activate
+PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+adb reverse tcp:8000 tcp:8000
+```
+
+安装 Debug APK 后，进入 `设置` 确认连接方式为 `USB 真机`，再进入练习页生成反馈。若页面显示 `来源：云端教练`，说明真机到 FastAPI 的闭环已接通。
 
 ## 页面结构
 
@@ -64,12 +85,15 @@ Android 模拟器默认访问 `http://10.0.2.2:8000`，对应本机运行的 Fas
 - `ui.scenario.ScenarioDetailScreen`：场景详情页，展示训练目标、关键词和对话节奏。
 - `ui.practice.PracticeScreen`：横屏练习页，负责完整状态展示、文本 fallback、反馈和总结闭环。
 - `ui.history.HistoryScreen`：本地历史页，展示完成记录、累计 turn、平均分和重复练习入口。
-- `ui.shared.PlaceholderScreen`：设置的同风格占位页面。
+- `ui.settings.CoachSettingsScreen`：设置页，支持云端教练地址配置和多引擎策略预留入口。
 - `ui.theme.PracticeTheme`：颜色和 Material 主题。
 - `core.ScenarioCatalog`：本地场景目录，提供推荐场景、列表和按 id 查询。
 - `core.PracticeUiState`：练习页状态模型，统一维护状态文案、主操作、时间线、结束和错误恢复标记。
 - `core.VoiceUiState`：语音输入/TTS 状态模型，维护 speech/demo 模式、权限、识别文本、错误和 TTS 开关。
-- `core.CoachBackendUiState`：后端/fallback 状态模型，维护 Auto、Backend Only、Local Only 和反馈来源。
+- `core.CoachEndpointConfig`：云端教练地址配置，维护 USB 真机、模拟器和自定义地址。
+- `core.EngineSelectionConfig`：ASR、TTS 和判定引擎策略预留接口，维护稳定演示、效果优先、离线优先模式和练习页 runtime 解析。
+- `core.AppSettingsStore`：设置持久化仓库，负责保存和恢复云端地址、连接方式和引擎策略。
+- `core.CoachBackendUiState`：云端/fallback 状态模型，维护 Auto、云端、本地和反馈来源。
 - `core.PracticeHistoryStore`：进程内本地历史仓库，负责记录完成摘要、最近记录、累计 turn 和清空记录。
 - `core.AppNavigator`：轻量路由状态，当前覆盖 Home、Scenarios、ScenarioDetail、Practice、History、Settings。
 - `network.CoachApiClient`：后端 `/coach/analyze` 客户端，负责请求 JSON 和映射 `TurnResult`。
