@@ -57,4 +57,13 @@ class PracticeScreenContractTest {
         assertTrue(source.contains("turnReviews"))
         assertTrue(source.contains("practicePlan"))
     }
+
+    @Test
+    fun practiceScreenUsesEngineSelectionForRuntimeLoop() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/practice/PracticeScreen.kt").readText()
+
+        assertTrue(source.contains("engineSelectionConfig: EngineSelectionConfig = EngineSelectionConfig.default()"))
+        assertTrue(source.contains("engineSelectionConfig.preferredBackendMode"))
+        assertTrue(source.contains("engineSelectionConfig.runtimeSummaries"))
+    }
 }

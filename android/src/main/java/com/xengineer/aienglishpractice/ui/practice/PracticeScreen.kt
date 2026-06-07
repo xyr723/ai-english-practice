@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.xengineer.aienglishpractice.core.CoachBackendUiState
 import com.xengineer.aienglishpractice.core.CoachCharacterState
 import com.xengineer.aienglishpractice.core.CoachFeedbackSource
+import com.xengineer.aienglishpractice.core.EngineSelectionConfig
 import com.xengineer.aienglishpractice.core.PracticeState
 import com.xengineer.aienglishpractice.core.PracticeStep
 import com.xengineer.aienglishpractice.core.PracticeUiState
@@ -64,6 +65,7 @@ import kotlinx.coroutines.launch
 fun PracticeScreen(
     scenarioId: String,
     coachBaseUrl: String = CoachBackendUiState.DEFAULT_BASE_URL,
+    engineSelectionConfig: EngineSelectionConfig = EngineSelectionConfig.default(),
     onBackHome: () -> Unit,
     onSessionFinished: (PracticeHistoryEntry) -> Unit = {}
 ) {
@@ -74,8 +76,13 @@ fun PracticeScreen(
     }
     var session by remember(scenarioId) { mutableStateOf(newPracticeSession(scenario)) }
     var uiState by remember(scenarioId) { mutableStateOf(PracticeUiState.initial(scenario)) }
-    var backendState by remember(scenarioId, coachBaseUrl) {
-        mutableStateOf(CoachBackendUiState.initial(coachBaseUrl))
+    var backendState by remember(scenarioId, coachBaseUrl, engineSelectionConfig) {
+        mutableStateOf(
+            CoachBackendUiState.initial(
+                baseUrl = coachBaseUrl,
+                mode = engineSelectionConfig.preferredBackendMode
+            )
+        )
     }
     val coachApiClient = remember(backendState.baseUrl) { CoachApiClient(backendState.baseUrl) }
     val demoTranscript = remember(scenarioId) { demoTranscriptFor(scenario.id) }
@@ -140,7 +147,10 @@ fun PracticeScreen(
         session = newPracticeSession(scenario)
         uiState = PracticeUiState.initial(scenario)
         voiceState = voiceState.useDemoMode()
-        backendState = backendState.useAuto()
+        backendState = CoachBackendUiState.initial(
+            baseUrl = coachBaseUrl,
+            mode = engineSelectionConfig.preferredBackendMode
+        )
     }
 
     fun submitLocalFeedback(transcript: String) {
@@ -336,6 +346,7 @@ fun PracticeScreen(
                         uiState = uiState,
                         voiceState = voiceState,
                         backendState = backendState,
+                        engineSelectionConfig = engineSelectionConfig,
                         modifier = Modifier.weight(0.8f)
                     )
                     FeedbackPanel(uiState = uiState, modifier = Modifier.weight(1f))
@@ -410,6 +421,7 @@ private fun StatusPanel(
     uiState: PracticeUiState,
     voiceState: VoiceUiState,
     backendState: CoachBackendUiState,
+    engineSelectionConfig: EngineSelectionConfig,
     modifier: Modifier = Modifier
 ) {
     DarkPanel(modifier = modifier.fillMaxWidth().fillMaxHeight()) {
@@ -441,6 +453,18 @@ private fun StatusPanel(
                 color = Color(0xFFEAD7C4),
                 style = MaterialTheme.typography.bodyMedium
             )
+            Text(
+                text = "引擎：${engineSelectionConfig.profile.title}",
+                color = Color(0xFFEAD7C4),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            engineSelectionConfig.runtimeSummaries.forEach { summary ->
+                Text(
+                    text = summary,
+                    color = Color(0xFFEAD7C4),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
             Spacer(Modifier.height(4.dp))
             uiState.timeline.forEach { step ->
                 TimelineRow(step)

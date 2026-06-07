@@ -8,11 +8,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.xengineer.aienglishpractice.core.AppNavigator
 import com.xengineer.aienglishpractice.core.AppRoute
-import com.xengineer.aienglishpractice.core.CoachEndpointConfig
-import com.xengineer.aienglishpractice.core.EngineSelectionConfig
+import com.xengineer.aienglishpractice.core.AppSettingsStore
 import com.xengineer.aienglishpractice.core.HomeDashboard
 import com.xengineer.aienglishpractice.core.PracticeHistoryStore
 import com.xengineer.aienglishpractice.core.ScenarioCatalog
+import com.xengineer.aienglishpractice.core.SharedPreferencesAppSettingsStorage
 import com.xengineer.aienglishpractice.core.SharedPreferencesPracticeHistoryStorage
 import com.xengineer.aienglishpractice.ui.history.HistoryScreen
 import com.xengineer.aienglishpractice.ui.home.HomeScreen
@@ -23,12 +23,16 @@ import com.xengineer.aienglishpractice.ui.settings.CoachSettingsScreen
 
 @Composable
 fun AppRoot() {
+    val context = LocalContext.current
+    val settingsStore = remember(context) {
+        AppSettingsStore(SharedPreferencesAppSettingsStorage(context.applicationContext))
+    }
+    val persistedSettings = remember(settingsStore) { settingsStore.load() }
     val navigator = remember { AppNavigator() }
     var route by remember { mutableStateOf(navigator.currentRoute) }
     var historyRevision by remember { mutableStateOf(0) }
-    var endpointConfig by remember { mutableStateOf(CoachEndpointConfig.default()) }
-    var engineSelectionConfig by remember { mutableStateOf(EngineSelectionConfig.default()) }
-    val context = LocalContext.current
+    var endpointConfig by remember { mutableStateOf(persistedSettings.endpointConfig) }
+    var engineSelectionConfig by remember { mutableStateOf(persistedSettings.engineSelectionConfig) }
     val historyStore = remember(context) {
         PracticeHistoryStore(SharedPreferencesPracticeHistoryStorage(context.applicationContext))
     }
@@ -53,6 +57,7 @@ fun AppRoot() {
         is AppRoute.Practice -> PracticeScreen(
             scenarioId = current.scenarioId,
             coachBaseUrl = endpointConfig.baseUrl,
+            engineSelectionConfig = engineSelectionConfig,
             onBackHome = { navigate { goHome() } },
             onSessionFinished = { entry ->
                 historyStore.record(entry)
@@ -87,9 +92,15 @@ fun AppRoot() {
 
         AppRoute.Settings -> CoachSettingsScreen(
             endpointConfig = endpointConfig,
-            onEndpointConfigChange = { endpointConfig = it },
+            onEndpointConfigChange = {
+                settingsStore.saveEndpointConfig(it)
+                endpointConfig = it
+            },
             engineSelectionConfig = engineSelectionConfig,
-            onEngineSelectionChange = { engineSelectionConfig = it },
+            onEngineSelectionChange = {
+                settingsStore.saveEngineSelectionConfig(it)
+                engineSelectionConfig = it
+            },
             onBackHome = { navigate { goHome() } }
         )
     }

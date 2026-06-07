@@ -113,8 +113,11 @@ data class CoachBackendUiState(
     companion object {
         const val DEFAULT_BASE_URL = CoachEndpointConfig.USB_DEVICE_BASE_URL
 
-        fun initial(baseUrl: String = DEFAULT_BASE_URL): CoachBackendUiState = CoachBackendUiState(
-            mode = CoachBackendMode.Auto,
+        fun initial(
+            baseUrl: String = DEFAULT_BASE_URL,
+            mode: CoachBackendMode = CoachBackendMode.Auto
+        ): CoachBackendUiState = CoachBackendUiState(
+            mode = mode,
             baseUrl = baseUrl
         )
     }
