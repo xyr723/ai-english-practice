@@ -94,7 +94,7 @@ class VoiceUiStateTest {
 
         assertEquals(VoiceInputMode.SpeechRecognizer, state.mode)
         assertFalse(state.ttsEnabled)
-        assertEquals("打开朗读", state.ttsAction)
+        assertEquals("打开自动朗读", state.ttsAction)
     }
 
     @Test

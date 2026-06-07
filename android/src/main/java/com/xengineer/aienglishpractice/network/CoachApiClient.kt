@@ -13,7 +13,7 @@ import org.json.JSONObject
 
 class CoachApiClient(
     private val baseUrl: String,
-    private val timeoutMs: Int = 2500
+    private val timeoutMs: Int = 8000
 ) {
     suspend fun analyze(request: CoachAnalyzePayload): TurnResult = withContext(Dispatchers.IO) {
         val connection = (URL("${baseUrl.trimEnd('/')}/coach/analyze").openConnection() as HttpURLConnection)

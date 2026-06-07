@@ -44,4 +44,13 @@ class AppNavigatorTest {
         navigator.startPractice("meeting")
         assertEquals(AppRoute.Practice("meeting"), navigator.currentRoute)
     }
+
+    @Test
+    fun historyEntryCanOpenReviewRoute() {
+        val navigator = AppNavigator()
+
+        navigator.openHistoryReview("entry-1")
+
+        assertEquals(AppRoute.HistoryReview("entry-1"), navigator.currentRoute)
+    }
 }

@@ -28,7 +28,8 @@ class AppRootContractTest {
         val source = File("src/main/java/com/xengineer/aienglishpractice/ui/AppRoot.kt").readText()
 
         assertTrue(source.contains("PracticeScreen("))
-        assertTrue(source.contains("coachBaseUrl = endpointConfig.baseUrl,\n            engineSelectionConfig = engineSelectionConfig"))
+        assertTrue(source.contains("coachBaseUrl = endpointConfig.baseUrl"))
+        assertTrue(source.contains("engineSelectionConfig = engineSelectionConfig"))
     }
 
     @Test
@@ -49,5 +50,14 @@ class AppRootContractTest {
         assertTrue(source.contains("LocalContext.current"))
         assertTrue(source.contains("SharedPreferencesPracticeHistoryStorage"))
         assertTrue(source.contains("PracticeHistoryStore(SharedPreferencesPracticeHistoryStorage(context.applicationContext))"))
+    }
+
+    @Test
+    fun rootKeepsCustomScenariosAndPassesSelectedScenarioToPractice() {
+        val source = File("src/main/java/com/xengineer/aienglishpractice/ui/AppRoot.kt").readText()
+
+        assertTrue(source.contains("customScenarios"))
+        assertTrue(source.contains("CustomScenarioFactory.fromPrompt"))
+        assertTrue(source.contains("scenarioOverride ="))
     }
 }

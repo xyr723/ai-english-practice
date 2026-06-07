@@ -10,6 +10,64 @@ enum class PracticeState {
     Error
 }
 
+data class SceneDescriptor(
+    val theme: String,
+    val backgroundColor: String,
+    val objects: List<String>,
+    val role: String
+) {
+    companion object {
+        fun restaurant(): SceneDescriptor = SceneDescriptor(
+            theme = "restaurant",
+            backgroundColor = "#6B3F22",
+            objects = listOf("counter", "menu", "table", "window"),
+            role = "barista"
+        )
+
+        fun interview(): SceneDescriptor = SceneDescriptor(
+            theme = "office",
+            backgroundColor = "#E8EEF4",
+            objects = listOf("desk", "screen", "plant", "window"),
+            role = "interviewer"
+        )
+
+        fun meeting(): SceneDescriptor = SceneDescriptor(
+            theme = "meeting",
+            backgroundColor = "#EAF1EC",
+            objects = listOf("table", "screen", "whiteboard", "window"),
+            role = "project lead"
+        )
+
+        fun airport(): SceneDescriptor = SceneDescriptor(
+            theme = "airport",
+            backgroundColor = "#DDEEFF",
+            objects = listOf("counter", "screen", "suitcase", "window"),
+            role = "airline staff"
+        )
+
+        fun shopping(): SceneDescriptor = SceneDescriptor(
+            theme = "shopping",
+            backgroundColor = "#F2D7B8",
+            objects = listOf("storefront", "display", "bag", "counter"),
+            role = "shop assistant"
+        )
+
+        fun library(): SceneDescriptor = SceneDescriptor(
+            theme = "library",
+            backgroundColor = "#D9E6DA",
+            objects = listOf("bookshelf", "book", "card", "desk"),
+            role = "librarian"
+        )
+
+        fun generic(prompt: String): SceneDescriptor = SceneDescriptor(
+            theme = "custom",
+            backgroundColor = "#E7F0EE",
+            objects = listOf("counter", "screen", "chair", "window"),
+            role = prompt.ifBlank { "coach" }
+        )
+    }
+}
+
 data class PracticeScenario(
     val id: String,
     val name: String,
@@ -24,7 +82,8 @@ data class PracticeScenario(
     val description: String = "",
     val level: String = "A2-B1",
     val estimatedMinutes: Int = 8,
-    val sceneTone: String = "guided"
+    val sceneTone: String = "guided",
+    val sceneDescriptor: SceneDescriptor = SceneDescriptor.generic(role)
 ) {
     companion object {
         fun restaurant(): PracticeScenario = PracticeScenario(
@@ -37,6 +96,7 @@ data class PracticeScenario(
             level = "A2",
             estimatedMinutes = 8,
             sceneTone = "温和服务场景",
+            sceneDescriptor = SceneDescriptor.restaurant(),
             goals = listOf(
                 "order_food_or_drink",
                 "use_polite_expression",
@@ -83,6 +143,7 @@ data class PracticeScenario(
             level = "A2-B1",
             estimatedMinutes = 10,
             sceneTone = "正式面试训练",
+            sceneDescriptor = SceneDescriptor.interview(),
             goals = listOf(
                 "introduce_self",
                 "describe_experience",
@@ -129,6 +190,7 @@ data class PracticeScenario(
             level = "B1",
             estimatedMinutes = 10,
             sceneTone = "协作会议场景",
+            sceneDescriptor = SceneDescriptor.meeting(),
             goals = listOf(
                 "give_opinion",
                 "ask_clarifying_question",

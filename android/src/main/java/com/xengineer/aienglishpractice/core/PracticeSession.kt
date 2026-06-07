@@ -34,11 +34,12 @@ class PracticeSession(
             matchedGoals = matchedGoals.size,
             totalGoals = scenario.goals.size
         )
+        val replyTurn = nextReplyTurn(text)
         val result = TurnResult(
             userText = text,
             betterExpression = correction.betterExpression,
-            reply = nextReply(),
-            replyTranslation = nextReplyTranslation(),
+            reply = replyTurn?.reply ?: nextReply(),
+            replyTranslation = replyTurn?.replyTranslation ?: nextReplyTranslation(),
             scores = scores,
             tips = correction.issues.map { it.message }
         )
@@ -90,7 +91,8 @@ class PracticeSession(
                 SummaryScoreBreakdown("语法", 0, "还没有完成练习轮次。"),
                 SummaryScoreBreakdown("流利度", 0, "还没有完成练习轮次。"),
                 SummaryScoreBreakdown("发音", 0, "还没有完成练习轮次。"),
-                SummaryScoreBreakdown("完成度", 0, "还没有完成练习轮次。")
+                SummaryScoreBreakdown("完成度", 0, "还没有完成练习轮次。"),
+                SummaryScoreBreakdown("词汇", 0, "还没有完成练习轮次。")
             )
         }
 
@@ -98,7 +100,8 @@ class PracticeSession(
             SummaryScoreBreakdown("语法", turns.averageOf { it.scores.grammar.score }, "表达准确度和纠错数量。"),
             SummaryScoreBreakdown("流利度", turns.averageOf { it.scores.fluency.score }, "回答速度和连续表达稳定性。"),
             SummaryScoreBreakdown("发音", turns.averageOf { it.scores.pronunciation.score }, "语音识别置信度代表的清晰度。"),
-            SummaryScoreBreakdown("完成度", turns.averageOf { it.scores.completion.score }, "场景目标命中情况。")
+            SummaryScoreBreakdown("完成度", turns.averageOf { it.scores.completion.score }, "场景目标命中情况。"),
+            SummaryScoreBreakdown("词汇", turns.averageOf { it.vocabularyScore() }, "表达丰富度和场景关键词使用。")
         )
     }
 
@@ -139,6 +142,19 @@ class PracticeSession(
         return scenario.turns.getOrNull(index)?.reply
             ?: scenario.fallbackReplies.firstOrNull()
             ?: "Could you say that again, please?"
+    }
+
+    private fun nextReplyTurn(text: String): ScenarioTurn? {
+        if (scenario.id != "restaurant" || turns.isNotEmpty()) return null
+
+        val lowered = text.lowercase()
+        val hasDrink = listOf("tea", "coffee", "water", "juice", "drink", "cola").any { it in lowered }
+        val hasFood = listOf("hamburger", "burger", "sandwich", "cake", "salad", "food").any { it in lowered }
+        if (hasFood && hasDrink) {
+            return scenario.turns.getOrNull(1)
+        }
+
+        return null
     }
 
     private fun nextReplyTranslation(): String {
@@ -206,6 +222,9 @@ private fun TurnResult.averageScore(): Int = listOf(
     scores.pronunciation.score,
     scores.completion.score
 ).average().toInt()
+
+private fun TurnResult.vocabularyScore(): Int =
+    ((scores.grammar.score + scores.completion.score) / 2).coerceIn(0, 100)
 
 private inline fun List<TurnResult>.averageOf(score: (TurnResult) -> Int): Int =
     map(score).average().toInt()

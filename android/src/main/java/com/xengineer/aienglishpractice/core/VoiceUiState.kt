@@ -55,7 +55,7 @@ data class VoiceUiState(
         }
 
     val ttsAction: String
-        get() = if (ttsEnabled) "关闭朗读" else "打开朗读"
+        get() = if (ttsEnabled) "关闭自动朗读" else "打开自动朗读"
 
     fun useDemoMode(): VoiceUiState = copy(
         mode = VoiceInputMode.DemoFallback,

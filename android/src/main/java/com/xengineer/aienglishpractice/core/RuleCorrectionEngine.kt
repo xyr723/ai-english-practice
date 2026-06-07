@@ -6,6 +6,17 @@ class RuleCorrectionEngine {
         var better = original
         val issues = mutableListOf<CorrectionIssue>()
 
+        commonGrammarRules.forEach { rule ->
+            if (rule.pattern.containsMatchIn(better)) {
+                better = better.replace(rule.pattern, rule.replacement)
+                issues += CorrectionIssue(
+                    type = "grammar",
+                    message = rule.message,
+                    suggestion = rule.replacement
+                )
+            }
+        }
+
         if (Regex("\\bI\\s+want\\s+order\\b", RegexOption.IGNORE_CASE).containsMatchIn(better)) {
             better = better.replace(
                 Regex("\\bI\\s+want\\s+order\\b", RegexOption.IGNORE_CASE),
@@ -40,6 +51,30 @@ class RuleCorrectionEngine {
             issues = issues
         )
     }
+
+    private data class GrammarRule(
+        val pattern: Regex,
+        val replacement: String,
+        val message: String
+    )
+
+    private val commonGrammarRules = listOf(
+        GrammarRule(
+            pattern = Regex("\\bI\\s+has\\b", RegexOption.IGNORE_CASE),
+            replacement = "I have",
+            message = "主语 I 后应使用 have。"
+        ),
+        GrammarRule(
+            pattern = Regex("\\bI\\s+am\\s+agree\\b", RegexOption.IGNORE_CASE),
+            replacement = "I agree",
+            message = "agree 本身是动词，不需要写成 “am agree”。"
+        ),
+        GrammarRule(
+            pattern = Regex("\\bI\\s+want\\s+go\\b", RegexOption.IGNORE_CASE),
+            replacement = "I want to go",
+            message = "want 后接动词时需要使用 to。"
+        )
+    )
 
     private fun hasPoliteMarker(text: String): Boolean {
         val lowered = text.lowercase()
